@@ -19,52 +19,48 @@ void AudioPipeline::addEnvelope(std::unique_ptr<Envelope> env) {
 }
 
 void AudioPipeline::connectOscillatorToFilter(size_t oscIndex, size_t filterIndex) {
-    // In a real implementation, this would connect the oscillators output to filter input
-    // This is just a placeholder for now - in practice we'd need a full routing system
+    // Placeholder for connection logic - in real implementation this would set up routing
 }
 
 void AudioPipeline::connectFilterToEnvelope(size_t filterIndex, size_t envIndex) {
-    // Placeholder for routing connections
+    // Placeholder for connection logic - in real implementation this would set up routing
 }
 
 void AudioPipeline::connectEnvelopeToOutput(size_t envIndex, float* output, size_t outputIndex) {
-    // Placeholder for routing to final output
+    // Placeholder for output connection - in real implementation this would route to final output
 }
 
 void AudioPipeline::processBlock(float** inputs, float** outputs, size_t numInputs, size_t numOutputs, size_t bufferSize) {
-    // Placeholder for actual processing logic
-    // This would typically:
-    // 1. Process each oscillator
-    // 2. Apply filters
-    // 3. Apply envelopes
-    // 4. Route to outputs
+    // Initialize output buffer
+    for (size_t i = 0; i < bufferSize; ++i) {
+        outputs[0][i] = 0.0f;
+    }
     
-    std::memset(outputs[0], 0, bufferSize * sizeof(float));
-    
-    // Process oscillators
+    // Process all oscillators and accumulate into output
     for (size_t i = 0; i < oscillators.size(); ++i) {
         if (oscillators[i]) {
-            // This is a simplified version - in reality you'd have routing
-            float buffer[64]; // Should use bufferSize instead of hardcoded value
-            oscillators[i]->processBlock(buffer, bufferSize);
+            float tempBuffer[64]; // Temporary buffer (using 64 to match internal size)
             
-            // Add to output (simplified mixing)
+            // Process each oscillator with its own buffer
+            oscillators[i]->processBlock(tempBuffer, bufferSize);
+            
+            // Mix oscillator output into main output
             for (size_t j = 0; j < bufferSize && j < 64; ++j) {
-                outputs[0][j] += buffer[j];
+                outputs[0][j] += tempBuffer[j];
             }
         }
     }
     
-    // Process filters and envelopes
+    // Apply filters and envelopes to the mix
     for (size_t i = 0; i < filters.size(); ++i) {
         if (filters[i]) {
-            // Apply filter
+            // Apply filter - placeholder for actual filtering logic
         }
     }
     
     for (size_t i = 0; i < envelopes.size(); ++i) {
         if (envelopes[i]) {
-            // Apply envelope
+            // Apply envelope - placeholder for actual envelope processing
         }
     }
 }

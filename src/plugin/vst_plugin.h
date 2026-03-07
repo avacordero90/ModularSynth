@@ -8,8 +8,27 @@
 #include <memory>
 
 // Forward declarations for VST-specific classes (these would be actual VST SDK classes)
-class AudioEffect { /* EMPTY */ };
-class AudioProcessor { /* EMPTY */ };
+class AudioEffect {
+public:
+    virtual ~AudioEffect() {}
+    virtual void process(float** inputs, float** outputs, int sampleFrames) {}
+    virtual void processReplacing(float** inputs, float** outputs, int sampleFrames) {}
+    virtual void setParameter(int index, float value) {}
+    virtual float getParameter(int index) { return 0.0f; }
+    virtual int getNumInputs() { return 2; }
+    virtual int getNumOutputs() { return 2; }
+    virtual const char* getEffectName() { return "ModularSynth"; }
+    virtual const char* getVendorName() { return "ModularAudio"; }
+    virtual int getVendorVersion() { return 1000; }
+};
+
+class AudioProcessor {
+public:
+    virtual ~AudioProcessor() {}
+    virtual void process(float** inputs, float** outputs, int sampleFrames) {}
+    virtual void setSampleRate(float sampleRate) {}
+    virtual void setBlockSize(int blockSize) {}
+};
 
 class VSTPlugin : public PluginInterface {
 private:

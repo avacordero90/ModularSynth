@@ -25,6 +25,15 @@ public:
     // Wavetable manipulation
     void resize(size_t newLength);
     void update();
+    
+    // Modulation and real-time manipulation
+    void setSample(size_t index, float value);
+    void clear();
+    void fill(float value);
+    void addNoise(float intensity);
+    void applyEnvelope(const std::vector<float>& envelope);
+    void modulatePhase(float phaseOffset);
+    void modulateAmplitude(float amplitudeFactor);
 };
 
 #endif // WAVETABLE_H

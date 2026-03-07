@@ -68,6 +68,31 @@ void Oscillator::incrementPhase(float inc) {
     }
 }
 
+// Wavetable modulation methods
+void Oscillator::modulateWavetablePhase(float phaseOffset) {
+    if (wavetable) {
+        wavetable->modulatePhase(phaseOffset);
+    }
+}
+
+void Oscillator::modulateWavetableAmplitude(float amplitudeFactor) {
+    if (wavetable) {
+        wavetable->modulateAmplitude(amplitudeFactor);
+    }
+}
+
+void Oscillator::applyWavetableEnvelopes(const std::vector<float>& envelope) {
+    if (wavetable) {
+        wavetable->applyEnvelope(envelope);
+    }
+}
+
+void Oscillator::addWavetableNoise(float intensity) {
+    if (wavetable) {
+        wavetable->addNoise(intensity);
+    }
+}
+
 float Oscillator::getFrequency() const {
     return frequency;
 }

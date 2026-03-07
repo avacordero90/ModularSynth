@@ -30,6 +30,12 @@ public:
     void setPhase(float p);
     void incrementPhase(float inc);
     
+    // Wavetable modulation (new)
+    void modulateWavetablePhase(float phaseOffset);
+    void modulateWavetableAmplitude(float amplitudeFactor);
+    void applyWavetableEnvelopes(const std::vector<float>& envelope);
+    void addWavetableNoise(float intensity);
+    
     // Getters
     float getFrequency() const;
     float getPhase() const;

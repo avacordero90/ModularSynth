@@ -1,6 +1,7 @@
 #include "wavetable.h"
 #include <algorithm>
 #include <cmath>
+#include <random>
 
 Wavetable::Wavetable(const std::string& name, const std::vector<float>& data) 
     : name(name), data(data), length(data.size()) {}
@@ -51,4 +52,59 @@ void Wavetable::resize(size_t newLength) {
     
     data = newData;
     length = newLength;
+}
+
+void Wavetable::update() {
+    // Virtual method for updating wavetables when needed
+    // Override this in subclasses to update wavetable content dynamically
+}
+
+void Wavetable::setSample(size_t index, float value) {
+    if (index < length) {
+        data[index] = value;
+    }
+}
+
+void Wavetable::clear() {
+    std::fill(data.begin(), data.end(), 0.0f);
+}
+
+void Wavetable::fill(float value) {
+    std::fill(data.begin(), data.end(), value);
+}
+
+void Wavetable::addNoise(float intensity) {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(-intensity, intensity);
+    
+    for (size_t i = 0; i < length; ++i) {
+        data[i] += dis(gen);
+    }
+}
+
+void Wavetable::applyEnvelope(const std::vector<float>& envelope) {
+    if (envelope.size() != length) return;
+    
+    for (size_t i = 0; i < length; ++i) {
+        data[i] *= envelope[i];
+    }
+}
+
+void Wavetable::modulatePhase(float phaseOffset) {
+    // Simple phase modulation - shift all samples by a phase offset
+    std::vector<float> newData(length);
+    
+    for (size_t i = 0; i < length; ++i) {
+        size_t shiftedIndex = (i + static_cast<size_t>(phaseOffset * length)) % length;
+        newData[i] = data[shiftedIndex];
+    }
+    
+    data = newData;
+}
+
+void Wavetable::modulateAmplitude(float amplitudeFactor) {
+    for (size_t i = 0; i < length; ++i) {
+        data[i] *= amplitudeFactor;
+    }
 }

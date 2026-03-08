@@ -145,6 +145,29 @@ void AudioPipeline::setOscillatorFrequency(size_t oscIndex, float frequency) {
     }
 }
 
+void AudioPipeline::setOscillatorDetune(size_t oscIndex, float cents) {
+    if (oscIndex >= oscillators.size()) return;
+    if (oscillators[oscIndex]) {
+        oscillators[oscIndex]->setDetune(cents);
+    }
+}
+
 bool AudioPipeline::areWavetablesInitialized() const {
     return wavetablesInitialized;
+}
+
+// Monophonic helpers used by the sequencer/MIDI subsystem
+void AudioPipeline::noteOn(float frequency) {
+    if (!oscillators.empty()) {
+        oscillators[0]->setFrequency(frequency);
+    }
+    if (!envelopes.empty()) {
+        envelopes[0]->triggerAttack();
+    }
+}
+
+void AudioPipeline::noteOff() {
+    if (!envelopes.empty()) {
+        envelopes[0]->triggerRelease();
+    }
 }

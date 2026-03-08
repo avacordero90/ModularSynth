@@ -2,6 +2,7 @@
 #define SYNTH_COMPONENT_H
 
 #include <gtk/gtk.h>
+#include "midi_handler.h"
 #include "../core/audio_pipeline.h"
 #include "../core/wavetable_manager.h"
 #include "../modules/oscillator.h"
@@ -62,6 +63,29 @@ private:
     // audio output subsystem (PortAudio)
     AudioOutput* audioOutput;
 
+    // MIDI handling and sequencing
+    MidiHandler midiHandler;
+
+    // arming control (prevents sound until armed)
+    GtkWidget *arm_button;
+    bool isArmed;
+
+    // Sequencer UI
+    GtkWidget *sequencer_frame;
+    GtkWidget *sequencer_grid;
+    GtkWidget *start_button;
+    GtkWidget *stop_button;
+    GtkWidget *tempo_scale;
+
+    // sequencer state (rows = notes, columns = steps)
+    std::vector<std::vector<GtkWidget*>> seqButtons;
+    std::vector<std::vector<bool>> seqState;
+    std::vector<int> prevActiveNotes;
+    int currentStep;
+    bool sequencerRunning;
+    guint sequencerTimeoutId;
+    float sequencerBPM;
+
 public:
     SynthComponent();
     ~SynthComponent();
@@ -77,6 +101,34 @@ private:
     void setupOscillatorSection();
     void setupFilterSection();
     void setupEnvelopeSection();
+    void setupSequencerSection();
+    void setupArmControl();
+
+    // oscillator control callbacks
+    static void onFreqChanged(GtkRange* range, gpointer userData);
+    static void onDetuneChanged(GtkRange* range, gpointer userData);
+    static void onWaveformChanged(GtkComboBox* combo, gpointer userData);
+
+    // Sequencer control callbacks
+    static gboolean sequencerTimeoutCallback(gpointer data);
+    void advanceSequencer();
+    static void onStartButtonClicked(GtkWidget* widget, gpointer userData);
+    static void onStopButtonClicked(GtkWidget* widget, gpointer userData);
+    static void onTempoChanged(GtkRange* range, gpointer userData);
+    static void onGridToggle(GtkToggleButton* toggle, gpointer userData);
+    static void onArmToggled(GtkToggleButton* toggle, gpointer userData);
+
+    // Sequencer control helpers
+    void startSequencer();
+    void stopSequencer();
+
+    // MIDI handling helpers
+    void handleMidiNoteOn(const MidiNote& note);
+    void handleMidiNoteOff(const MidiNote& note);
+    float midiNoteToFrequency(int noteNumber) const;
+    
+    // arm state management
+    void setArmed(bool armed);
 };
 
 #endif // SYNTH_COMPONENT_H

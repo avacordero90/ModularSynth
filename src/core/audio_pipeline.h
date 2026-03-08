@@ -7,6 +7,7 @@
 #include "../core/wavetable_manager.h"
 #include <vector>
 #include <memory>
+#include <string>
 
 class AudioPipeline {
 private:
@@ -53,9 +54,14 @@ public:
     void configureOscillatorsWithWavetables();
     void setOscillatorWavetable(size_t oscIndex, const std::string& wavetableName);
     void setOscillatorFrequency(size_t oscIndex, float frequency);
+    void setOscillatorDetune(size_t oscIndex, float cents);
     
     // Audio generation helpers
     bool areWavetablesInitialized() const;
+
+    // convenience helpers for monophonic note triggering (used by sequencer/MIDI)
+    void noteOn(float frequency);
+    void noteOff();
 };
 
 #endif // AUDIO_PIPELINE_H

@@ -13,7 +13,7 @@ BUILDDIR = build
 # Only compile core modules and the application entry point (synth component).
 SOURCES = $(wildcard $(SRCDIR)/core/*.cpp) \
           $(wildcard $(SRCDIR)/modules/*.cpp) \
-          $(wildcard $(SRCDIR)/app/*.cpp) \
+          $(SRCDIR)/app/synth_component.cpp \
           $(SRCDIR)/main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 DEPS = $(OBJECTS:.o=.d)
@@ -29,7 +29,7 @@ GTK_LIBS = $(shell pkg-config --libs gtk+-3.0)
 
 # Combine all flags
 CXXFLAGS += $(GTK_FLAGS)
-LDFLAGS = $(GTK_LIBS) -pthread -lportaudio
+LDFLAGS = $(GTK_LIBS) -pthread
 
 # Default target
 all: $(TARGET)

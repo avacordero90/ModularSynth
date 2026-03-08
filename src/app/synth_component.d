@@ -618,7 +618,7 @@ synth_component.o: src/app/synth_component.cpp src/app/synth_component.h \
  /usr/include/gtk-3.0/gtk/deprecated/gtkvscale.h \
  /usr/include/gtk-3.0/gtk/deprecated/gtkvscrollbar.h \
  /usr/include/gtk-3.0/gtk/deprecated/gtkvseparator.h \
- /usr/include/gtk-3.0/gtk/gtk-autocleanups.h \
+ /usr/include/gtk-3.0/gtk/gtk-autocleanups.h src/app/midi_handler.h \
  src/app/../core/audio_pipeline.h src/app/../core/../modules/oscillator.h \
  src/app/../core/../modules/../core/wavetable.h \
  src/app/../core/../modules/filter.h \

@@ -232,7 +232,6 @@ void SynthComponent::initializeSynth() {
         updateStatus("Error initializing synth");
         std::cerr << "Initialization error: " << e.what() << std::endl;
     }
-
 }
 
 void SynthComponent::cleanupSynth() {

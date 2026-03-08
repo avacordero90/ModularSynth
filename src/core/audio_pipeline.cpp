@@ -145,6 +145,7 @@ void AudioPipeline::setOscillatorFrequency(size_t oscIndex, float frequency) {
     }
 }
 
+<<<<<<< HEAD
 void AudioPipeline::setOscillatorDetune(size_t oscIndex, float cents) {
     if (oscIndex >= oscillators.size()) return;
     if (oscillators[oscIndex]) {
@@ -170,4 +171,8 @@ void AudioPipeline::noteOff() {
     if (!envelopes.empty()) {
         envelopes[0]->triggerRelease();
     }
+=======
+bool AudioPipeline::areWavetablesInitialized() const {
+    return wavetablesInitialized;
+>>>>>>> 5ffc43519522ce0e9298fdc8c58162ba0a4e9e39
 }

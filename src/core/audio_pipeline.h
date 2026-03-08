@@ -54,6 +54,7 @@ public:
     void configureOscillatorsWithWavetables();
     void setOscillatorWavetable(size_t oscIndex, const std::string& wavetableName);
     void setOscillatorFrequency(size_t oscIndex, float frequency);
+<<<<<<< HEAD
     void setOscillatorDetune(size_t oscIndex, float cents);
     
     // Audio generation helpers
@@ -62,6 +63,11 @@ public:
     // convenience helpers for monophonic note triggering (used by sequencer/MIDI)
     void noteOn(float frequency);
     void noteOff();
+=======
+    
+    // Audio generation helpers
+    bool areWavetablesInitialized() const;
+>>>>>>> 5ffc43519522ce0e9298fdc8c58162ba0a4e9e39
 };
 
 #endif // AUDIO_PIPELINE_H

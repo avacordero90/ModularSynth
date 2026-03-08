@@ -1,8 +1,14 @@
 #include "audio_pipeline.h"
 #include <cstring>
+#include <iostream>
 
 AudioPipeline::AudioPipeline(WavetableManager* wm, float sampleRate) 
-    : wavetableManager(wm), sampleRate(sampleRate), bufferSize(64) {}
+    : wavetableManager(wm), sampleRate(sampleRate), bufferSize(64), wavetablesInitialized(false) {
+    // Initialize default wavetables on construction
+    if (wavetableManager) {
+        initializeDefaultWavetables();
+    }
+}
 
 AudioPipeline::~AudioPipeline() = default;
 
@@ -73,6 +79,72 @@ float AudioPipeline::getSampleRate() const {
     return sampleRate;
 }
 
+size_t AudioPipeline::getBufferSize() const {
+    return bufferSize;
+}
+
 void AudioPipeline::setBufferSize(size_t size) {
     bufferSize = size;
+}
+
+void AudioPipeline::initializeDefaultWavetables() {
+    if (!wavetableManager) return;
+    
+    // Generate standard waveforms
+    wavetableManager->generateSineWave("sine", 2048);
+    wavetableManager->generateSquareWave("square", 2048);
+    wavetableManager->generateSawtoothWave("sawtooth", 2048);
+    wavetableManager->generateTriangleWave("triangle", 2048);
+    
+    wavetablesInitialized = true;
+    std::cout << "Default wavetables initialized: sine, square, sawtooth, triangle" << std::endl;
+}
+
+void AudioPipeline::generateWavetables() {
+    if (!wavetableManager) return;
+    
+    // Generate additional wavetables as needed
+    // This can be extended to generate more complex wavetables
+}
+
+void AudioPipeline::configureOscillatorsWithWavetables() {
+    if (!wavetableManager || !wavetablesInitialized) return;
+    
+    // Set each oscillator to use the sine waveform by default
+    for (size_t i = 0; i < oscillators.size(); ++i) {
+        if (oscillators[i]) {
+            Wavetable* sineWavetable = wavetableManager->getWavetable("sine");
+            if (sineWavetable) {
+                oscillators[i]->setWavetable(sineWavetable);
+                oscillators[i]->setFrequency(440.0f + (i * 100.0f)); // Slight variation in frequency
+                std::cout << "Configured oscillator " << i << " with sine wavetable at " 
+                          << (440.0f + (i * 100.0f)) << " Hz" << std::endl;
+            }
+        }
+    }
+}
+
+void AudioPipeline::setOscillatorWavetable(size_t oscIndex, const std::string& wavetableName) {
+    if (oscIndex >= oscillators.size() || !wavetableManager) return;
+    
+    if (oscillators[oscIndex]) {
+        Wavetable* wavetable = wavetableManager->getWavetable(wavetableName);
+        if (wavetable) {
+            oscillators[oscIndex]->setWavetable(wavetable);
+            oscillators[oscIndex]->setWavetableName(wavetableName);
+            std::cout << "Set oscillator " << oscIndex << " to wavetable: " << wavetableName << std::endl;
+        }
+    }
+}
+
+void AudioPipeline::setOscillatorFrequency(size_t oscIndex, float frequency) {
+    if (oscIndex >= oscillators.size()) return;
+    
+    if (oscillators[oscIndex]) {
+        oscillators[oscIndex]->setFrequency(frequency);
+    }
+}
+
+bool AudioPipeline::areWavetablesInitialized() const {
+    return wavetablesInitialized;
 }

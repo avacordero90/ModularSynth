@@ -1,5 +1,7 @@
 #include "synth_component.h"
+#include "../core/audio_output.h"
 #include <cstdio>
+#include <iostream>
 
 SynthComponent::SynthComponent()
     : main_window(nullptr),
@@ -162,35 +164,73 @@ void SynthComponent::setupEnvelopeSection() {
 
 void SynthComponent::initializeSynth() {
     try {
+        // Create and initialize wavetable manager
         wavetableManager = new WavetableManager();
-        wavetableManager->generateSineWave("sine", 1024);
-        wavetableManager->generateSquareWave("square", 1024);
-        wavetableManager->generateSawtoothWave("saw", 1024);
-        wavetableManager->generateTriangleWave("triangle", 1024);
         
+        // Generate standard wavetables with larger size for better quality
+        wavetableManager->generateSineWave("sine", 2048);
+        wavetableManager->generateSquareWave("square", 2048);
+        wavetableManager->generateSawtoothWave("sawtooth", 2048);
+        wavetableManager->generateTriangleWave("triangle", 2048);
+        
+        // Create audio pipeline with 44.1kHz sample rate
         pipeline = new AudioPipeline(wavetableManager, 44100.0f);
         
+        // Create and configure modules
         oscillator = std::make_unique<Oscillator>();
         filter = std::make_unique<Filter>(FilterType::LOWPASS);
         envelope = std::make_unique<Envelope>();
         
+        // Set initial oscillator configuration with sine wavetable
         Wavetable* sineWave = wavetableManager->getWavetable("sine");
         if (sineWave) {
             oscillator->setWavetable(sineWave);
+            oscillator->setWavetableName("sine");
             oscillator->setFrequency(440.0f);
         }
         
+        // Add modules to pipeline
         pipeline->addOscillator(std::move(oscillator));
         pipeline->addFilter(std::move(filter));
         pipeline->addEnvelope(std::move(envelope));
         
-        updateStatus("Synthesizer initialized successfully!");
+        // Configure oscillators with wavetables
+        pipeline->configureOscillatorsWithWavetables();
+
+        // begin audio output automatically (no MIDI needed)
+        audioOutput = new AudioOutput(pipeline);
+        if (audioOutput) {
+            bool started = audioOutput->start();
+            if (!started) {
+                std::cerr << "Warning: unable to start audio output" << std::endl;
+            }
+        }
+        
+        // Update status with initialization details
+        char statusMsg[512];
+        snprintf(statusMsg, sizeof(statusMsg), 
+                 "Synthesizer initialized successfully!\\n"
+                 "Wavetables: %zu (sine, square, sawtooth, triangle)\\n"
+                 "Sample Rate: %.1f kHz\\n"
+                 "Audio Buffer: 64 samples\\n"
+                 "Oscillator: Sine @ 440 Hz\\n"
+                 "Filter: Lowpass enabled",
+                 wavetableManager->getNumWavetables(),
+                 pipeline->getSampleRate() / 1000.0f);
+        updateStatus(statusMsg);
+        std::cout << "SynthComponent initialized with wavetable audio generation" << std::endl;
     } catch (const std::exception& e) {
         updateStatus("Error initializing synth");
+        std::cerr << "Initialization error: " << e.what() << std::endl;
     }
 }
 
 void SynthComponent::cleanupSynth() {
+    if (audioOutput) {
+        audioOutput->stop();
+        delete audioOutput;
+        audioOutput = nullptr;
+    }
     if (pipeline) {
         delete pipeline;
         pipeline = nullptr;

@@ -1,6 +1,6 @@
-# Modular Wavetable Synth Plugin
+# Modular Wavetable Synth Standalone
 
-A flexible, modular audio plugin designed for virtual studio environments. The synth provides multiple interconnected audio modules (oscillator, filter, envelope) with extensive parameter control and wavetable management.
+A flexible, modular audio synthesizer application with a GTK‑based GUI. It is no longer built as a plugin; instead the program runs standalone on the desktop, providing the same modular audio modules (oscillator, filter, envelope) and wavetable management.
 
 ## Project Structure
 
@@ -15,9 +15,10 @@ VstProject/
 │   │   ├── oscillator.h/cpp       # Oscillator with multiple waveform types
 │   │   ├── filter.h/cpp           # Audio filtering with multiple filter types
 │   │   └── envelope.h/cpp         # Envelope generation (ADSR)
-│   ├── plugin/              # Plugin interface and VST implementation
-│   │   ├── plugin_interface.h/cpp # Base plugin functionality and parameters
-│   │   └── vst_plugin.h/cpp       # VST-specific implementation
+│   ├── app/                 # Application GUI and entry point (formerly plugin folder)
+│   │   ├── synth_component.h/cpp # GTK GUI wrapper and synth initialization
+│   │   ├── midi_handler.h/cpp     # MIDI message processing (legacy)
+│   │   └── others (legacy plugin code)
 ├── docs/                    # Documentation and design files
 │   └── PLUGIN_DESIGN.md     # Detailed plugin design and control specifications
 └── README.md                # This file
@@ -45,15 +46,11 @@ The wavetable manager provides:
 - Wavetable morphing capabilities
 - Shared resource management for efficient memory use
 
-## Plugin Interface
+## Application Structure
 
-The plugin interface (`PluginInterface`) defines:
-- All available parameters with min/max/default values
-- Parameter categories (oscillator, filter, envelope, wavetable)
-- Control types (sliders, combo boxes, etc.)
-- UI layout specifications
-- Wavetable management methods
-- Parameter mapping to actual audio modules
+The application exposes the synth engine through a GTK GUI. Parameters are managed directly in the GTK widgets and mapped into the audio modules in `SynthComponent`.
+
+(The previous `PluginInterface` code is retained in the `app/` directory for reference but is no longer compiled or used.)
 
 ### Parameters by Module
 
@@ -77,6 +74,54 @@ The plugin interface (`PluginInterface`) defines:
 - Selection: Combo box with wavetable list
 - Morph: 0.0 to 1.0 (modulatable)
 
+## MIDI Integration
+
+The standalone synthesizer can optionally use the `MidiHandler` component for MIDI input. MIDI code resides in `app/midi_handler.h/cpp` and is currently legacy but may be re‑enabled or extended in the future.
+
+### Supported MIDI Messages:
+- Note On/Off events with velocity control
+- Control Change messages for real-time parameter adjustment
+- Pitch Bend messages for continuous pitch modulation
+- MIDI Clock synchronization for tempo matching
+- Start/Continue/Stop sequence commands
+
+### Connecting MIDI Hardware:
+1. **Connect MIDI Controller**: Use standard USB MIDI cables or Bluetooth MIDI adapters to connect your controller
+2. **Configure Your DAW**:
+   - Set up your audio host (DAW) to recognize the plugin as a MIDI input device
+   - Create routing between your MIDI controller and the synth plugin
+3. **Plugin Setup**:
+   - Enable MIDI input within the synth's user interface
+   - Configure which MIDI channels to listen on (or all channels)
+   - Set up channel-specific parameter mappings if desired
+
+### Using MIDI to Play Sounds:
+1. Configure your MIDI keyboard or controller to send Note On/Off messages
+2. Play notes using the keyboard or pad controller
+3. Use CC controllers for real-time modulation of oscillator frequency, filter cutoff, envelope parameters, and other controls
+4. Use pitch bend wheel for continuous pitch control
+5. Utilize aftertouch for expressive sound shaping
+
+### MIDI Parameter Mapping:
+The synth implements a flexible parameter mapping system that allows users to assign any MIDI controller to any synth parameter. By default, the following mappings are configured:
+
+- CC 1: Modulation Wheel (default)
+- CC 7: Volume (default)
+- CC 11: Aftertouch (default)
+- CC 64: Sustain Pedal (default)
+
+Users can modify these mappings through the synthesizer's parameter configuration interface.
+
+#### Available MIDI Message Types:
+- **Note On/Off** (0x90/0x80): Play notes with velocity-sensitive triggering
+- **Control Change** (0xB0): Real-time modulation of parameters using CC controllers
+- **Pitch Bend** (0xE0): Continuous pitch changes from -12 to +12 semitones
+- **Clock Messages**: 
+  - MIDI Clock (0xF8): For synchronization with DAWs
+  - Start (0xFA): Begin playback sequence
+  - Continue (0xFB): Resume playback
+  - Stop (0xFC): End playback sequence
+
 ## Controls and UI Design
 
 The plugin features a well-organized UI that groups controls by functionality:
@@ -98,6 +143,7 @@ To build this project:
 - Standard C++ libraries
 - Audio development tools (for VST integration)
 - CMake or compatible build system
+- GTK development headers (for GUI components)
 
 ## Usage Notes
 

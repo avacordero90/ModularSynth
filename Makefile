@@ -10,17 +10,22 @@ SRCDIR = src
 BUILDDIR = build
 
 # Source files
-SOURCES = $(wildcard $(SRCDIR)/**/*.cpp) $(wildcard $(SRCDIR)/*.cpp)
+# Only compile core modules and the application entry point (synth component).
+SOURCES = $(wildcard $(SRCDIR)/core/*.cpp) \
+          $(wildcard $(SRCDIR)/modules/*.cpp) \
+          $(SRCDIR)/app/synth_component.cpp \
+          $(SRCDIR)/main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 DEPS = $(OBJECTS:.o=.d)
 
 # Include directories
-INC_DIRS = $(SRCDIR) $(SRCDIR)/core $(SRCDIR)/modules $(SRCDIR)/plugin
+INC_DIRS = $(SRCDIR) $(SRCDIR)/core $(SRCDIR)/modules $(SRCDIR)/app
 INCLUDES = $(addprefix -I, $(INC_DIRS))
 
 # GTK Flags (includes pkg-config call for GTK3)
 GTK_FLAGS = $(shell pkg-config --cflags gtk+-3.0)
 GTK_LIBS = $(shell pkg-config --libs gtk+-3.0)
+
 
 # Combine all flags
 CXXFLAGS += $(GTK_FLAGS)

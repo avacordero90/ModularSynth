@@ -14,6 +14,7 @@ BUILDDIR = build
 SOURCES = $(wildcard $(SRCDIR)/core/*.cpp) \
           $(wildcard $(SRCDIR)/modules/*.cpp) \
           $(SRCDIR)/app/synth_component.cpp \
+          $(SRCDIR)/app/midi_handler.cpp \
           $(SRCDIR)/main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 DEPS = $(OBJECTS:.o=.d)
@@ -28,8 +29,8 @@ GTK_LIBS = $(shell pkg-config --libs gtk+-3.0)
 
 
 # Combine all flags
-CXXFLAGS += $(GTK_FLAGS)
-LDFLAGS = $(GTK_LIBS) -pthread
+CXXFLAGS += $(GTK_FLAGS) -DUSE_PORTAUDIO
+LDFLAGS = $(GTK_LIBS) -lportaudio -pthread
 
 # Default target
 all: $(TARGET)

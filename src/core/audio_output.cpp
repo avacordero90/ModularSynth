@@ -1,16 +1,10 @@
 #include "audio_output.h"
-<<<<<<< HEAD
-#include <iostream>
-#include <cstring>
-
-AudioOutput::AudioOutput(AudioPipeline* pipeline)
-    : pipeline(pipeline), stream(nullptr), running(false) {
-=======
 #include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <chrono>
 #include <thread>
+#include <algorithm>
 
 // Helper to write little-endian integers
 static void writeLE(std::ofstream &out, uint32_t value, int bytes) {
@@ -21,7 +15,7 @@ static void writeLE(std::ofstream &out, uint32_t value, int bytes) {
 
 AudioOutput::AudioOutput(AudioPipeline* pipeline, const std::string& filename)
     : pipeline(pipeline), filename(filename), running(false), dataChunkPos(0) {
->>>>>>> 5ffc43519522ce0e9298fdc8c58162ba0a4e9e39
+    // nothing else to do; portaudio stream created on start()
 }
 
 AudioOutput::~AudioOutput() {
@@ -31,7 +25,8 @@ AudioOutput::~AudioOutput() {
 bool AudioOutput::start() {
     if (!pipeline) return false;
 
-<<<<<<< HEAD
+#ifdef USE_PORTAUDIO
+    // initialize PortAudio and open stream
     PaError err = Pa_Initialize();
     if (err != paNoError) {
         std::cerr << "PortAudio initialization failed: " << Pa_GetErrorText(err) << std::endl;
@@ -70,7 +65,9 @@ bool AudioOutput::start() {
 
     running = true;
     std::cout << "Real-time audio output started" << std::endl;
-=======
+    return true;
+#else
+    // fallback to WAV file rendering
     outFile.open(filename, std::ios::binary);
     if (!outFile) {
         std::cerr << "Failed to open output file " << filename << std::endl;
@@ -80,14 +77,14 @@ bool AudioOutput::start() {
     writeWavHeader();
     running = true;
     worker = std::thread(&AudioOutput::runLoop, this);
->>>>>>> 5ffc43519522ce0e9298fdc8c58162ba0a4e9e39
     return true;
+#endif
 }
 
 void AudioOutput::stop() {
+#ifdef USE_PORTAUDIO
     if (running) {
         running = false;
-<<<<<<< HEAD
         if (stream) {
             Pa_StopStream(stream);
             Pa_CloseStream(stream);
@@ -96,35 +93,14 @@ void AudioOutput::stop() {
         Pa_Terminate();
         std::cout << "Real-time audio output stopped" << std::endl;
     }
-}
-
-int AudioOutput::audioCallback(const void* inputBuffer, void* outputBuffer,
-                              unsigned long framesPerBuffer,
-                              const PaStreamCallbackTimeInfo* timeInfo,
-                              PaStreamCallbackFlags statusFlags,
-                              void* userData) {
-    AudioOutput* self = static_cast<AudioOutput*>(userData);
-    float* out = static_cast<float*>(outputBuffer);
-
-    // Prepare input/output pointers for pipeline
-    float* inPtrs[1] = { nullptr }; // no input
-    float* outPtrs[1] = { out };    // mono output
-
-    // Process audio through pipeline (mono)
-    self->pipeline->processBlock(inPtrs, outPtrs, 0, 1, framesPerBuffer);
-
-    // Duplicate mono to stereo
-    for (unsigned long i = 0; i < framesPerBuffer; ++i) {
-        out[i * 2 + 1] = out[i * 2]; // right = left
-    }
-
-    return self->running ? paContinue : paComplete;
-}
-=======
+#else
+    if (running) {
+        running = false;
         if (worker.joinable()) worker.join();
         finalizeWavHeader();
     }
     if (outFile.is_open()) outFile.close();
+#endif
 }
 
 void AudioOutput::writeWavHeader() {
@@ -158,6 +134,30 @@ void AudioOutput::finalizeWavHeader() {
     writeLE(outFile, dataSize, 4);
 }
 
+#ifdef USE_PORTAUDIO
+int AudioOutput::audioCallback(const void* inputBuffer, void* outputBuffer,
+                              unsigned long framesPerBuffer,
+                              const PaStreamCallbackTimeInfo* timeInfo,
+                              PaStreamCallbackFlags statusFlags,
+                              void* userData) {
+    AudioOutput* self = static_cast<AudioOutput*>(userData);
+    float* out = static_cast<float*>(outputBuffer);
+
+    // Prepare input/output pointers for pipeline
+    float* inPtrs[1] = { nullptr }; // no input
+    float* outPtrs[1] = { out };    // mono output
+
+    // Process audio through pipeline (mono)
+    self->pipeline->processBlock(inPtrs, outPtrs, 0, 1, framesPerBuffer);
+
+    // Duplicate mono to stereo
+    for (unsigned long i = 0; i < framesPerBuffer; ++i) {
+        out[i * 2 + 1] = out[i * 2]; // right = left
+    }
+
+    return self->running ? paContinue : paComplete;
+}
+#else
 void AudioOutput::runLoop() {
     const size_t bufferSize = pipeline->getBufferSize();
     std::vector<float> mono(bufferSize);
@@ -177,4 +177,4 @@ void AudioOutput::runLoop() {
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
->>>>>>> 5ffc43519522ce0e9298fdc8c58162ba0a4e9e39
+#endif

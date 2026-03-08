@@ -227,7 +227,11 @@ void SynthComponent::initializeSynth() {
                  pipeline->getSampleRate() / 1000.0f,
                  isArmed ? "yes" : "no");
         updateStatus(statusMsg);
-        std::cout << "SynthComponent initialized with wavetable audio generation" << std::endl;
+#ifdef USE_PORTAUDIO
+        std::cout << "SynthComponent initialized with real-time PortAudio output" << std::endl;
+#else
+        std::cout << "SynthComponent initialized with wavetable file output" << std::endl;
+#endif
     } catch (const std::exception& e) {
         updateStatus("Error initializing synth");
         std::cerr << "Initialization error: " << e.what() << std::endl;

@@ -18,12 +18,12 @@ void PluginInterface::setPipeline(AudioPipeline* pipe) {
 
 void PluginInterface::setupParameters() {
     // Oscillator parameters
-    oscillatorParams.push_back(Parameter("Oscillator Frequency", 20.0f, 20000.0f, 440.0f, true, ControlType::SLIDER, "Hz"));
+    oscillatorParams.push_back(Parameter("Oscillator Frequency", 20.0f, 5000.0f, 440.0f, true, ControlType::SLIDER, "Hz"));
     oscillatorParams.push_back(Parameter("Oscillator Detune", -1200.0f, 1200.0f, 0.0f, true, ControlType::SLIDER, "Cents"));
     oscillatorParams.push_back(Parameter("Oscillator Waveform", 0.0f, 5.0f, 0.0f, false, ControlType::COMBOBOX)); // Different wavetable types
     
     // Filter parameters
-    filterParams.push_back(Parameter("Filter Frequency", 20.0f, 20000.0f, 1000.0f, true, ControlType::SLIDER, "Hz"));
+    filterParams.push_back(Parameter("Filter Frequency", 20.0f, 5000.0f, 1000.0f, true, ControlType::SLIDER, "Hz"));
     filterParams.push_back(Parameter("Filter Resonance", 0.1f, 10.0f, 0.707f, true, ControlType::SLIDER, "Q"));
     filterParams.push_back(Parameter("Filter Type", 0.0f, 7.0f, 0.0f, false, ControlType::COMBOBOX)); // Enum for filter types
     
@@ -79,10 +79,11 @@ void PluginInterface::loadWavetables() {
     // Load wavetables into the manager
     if (wavetableManager) {
         // Generate some default wavetables
-        wavetableManager->generateSineWave("sine", 1024);
-        wavetableManager->generateSquareWave("square", 1024);
-        wavetableManager->generateSawtoothWave("saw", 1024);
-        wavetableManager->generateTriangleWave("triangle", 1024);
+        const size_t tblSize = 8192; // larger table for smoother sine output
+        wavetableManager->generateSineWave("sine", tblSize);
+        wavetableManager->generateSquareWave("square", tblSize);
+        wavetableManager->generateSawtoothWave("saw", tblSize);
+        wavetableManager->generateTriangleWave("triangle", tblSize);
         
         // Add more complex wavetables
         wavetableManager->addWavetable("sine_5th", {0.0f, 0.5f, 0.0f, -0.5f, 0.0f});

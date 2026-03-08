@@ -91,10 +91,11 @@ void AudioPipeline::initializeDefaultWavetables() {
     if (!wavetableManager) return;
     
     // Generate standard waveforms
-    wavetableManager->generateSineWave("sine", 2048);
-    wavetableManager->generateSquareWave("square", 2048);
-    wavetableManager->generateSawtoothWave("sawtooth", 2048);
-    wavetableManager->generateTriangleWave("triangle", 2048);
+    const size_t tblSize = 8192; // higher resolution table for smoother playback
+    wavetableManager->generateSineWave("sine", tblSize);
+    wavetableManager->generateSquareWave("square", tblSize);
+    wavetableManager->generateSawtoothWave("sawtooth", tblSize);
+    wavetableManager->generateTriangleWave("triangle", tblSize);
     
     wavetablesInitialized = true;
     std::cout << "Default wavetables initialized: sine, square, sawtooth, triangle" << std::endl;
@@ -149,6 +150,55 @@ void AudioPipeline::setOscillatorDetune(size_t oscIndex, float cents) {
     if (oscIndex >= oscillators.size()) return;
     if (oscillators[oscIndex]) {
         oscillators[oscIndex]->setDetune(cents);
+    }
+}
+
+void AudioPipeline::setFilterCutoff(size_t filterIndex, float cutoff) {
+    if (filterIndex >= filters.size()) return;
+    if (filters[filterIndex]) {
+        filters[filterIndex]->setFrequency(cutoff);
+    }
+}
+
+void AudioPipeline::setFilterResonance(size_t filterIndex, float resonance) {
+    if (filterIndex >= filters.size()) return;
+    if (filters[filterIndex]) {
+        filters[filterIndex]->setResonance(resonance);
+    }
+}
+
+void AudioPipeline::setFilterType(size_t filterIndex, FilterType type) {
+    if (filterIndex >= filters.size()) return;
+    if (filters[filterIndex]) {
+        filters[filterIndex]->setType(type);
+    }
+}
+
+void AudioPipeline::setEnvelopeAttack(size_t envIndex, float attack) {
+    if (envIndex >= envelopes.size()) return;
+    if (envelopes[envIndex]) {
+        envelopes[envIndex]->setAttackTime(attack);
+    }
+}
+
+void AudioPipeline::setEnvelopeDecay(size_t envIndex, float decay) {
+    if (envIndex >= envelopes.size()) return;
+    if (envelopes[envIndex]) {
+        envelopes[envIndex]->setDecayTime(decay);
+    }
+}
+
+void AudioPipeline::setEnvelopeSustain(size_t envIndex, float sustain) {
+    if (envIndex >= envelopes.size()) return;
+    if (envelopes[envIndex]) {
+        envelopes[envIndex]->setSustainLevel(sustain);
+    }
+}
+
+void AudioPipeline::setEnvelopeRelease(size_t envIndex, float release) {
+    if (envIndex >= envelopes.size()) return;
+    if (envelopes[envIndex]) {
+        envelopes[envIndex]->setReleaseTime(release);
     }
 }
 

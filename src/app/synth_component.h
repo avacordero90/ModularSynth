@@ -29,6 +29,8 @@ private:
     GtkWidget *freq_label;
     GtkWidget *detune_label;
     GtkWidget *waveform_label;
+    GtkWidget *freq_entry;          // numeric entry for frequency
+    GtkWidget *detune_entry;        // numeric entry for detune (cents)
     
     // Filter section
     GtkWidget *filter_frame;
@@ -38,6 +40,8 @@ private:
     GtkWidget *cutoff_label;
     GtkWidget *res_label;
     GtkWidget *filter_type_label;
+    GtkWidget *cutoff_entry;        // numeric entry for cutoff frequency
+    GtkWidget *res_entry;           // numeric entry for resonance
     
     // Envelope section
     GtkWidget *env_frame;
@@ -49,6 +53,10 @@ private:
     GtkWidget *decay_label;
     GtkWidget *sustain_label;
     GtkWidget *release_label;
+    GtkWidget *attack_entry;        // numeric entry for attack time
+    GtkWidget *decay_entry;         // numeric entry for decay time
+    GtkWidget *sustain_entry;       // numeric entry for sustain level
+    GtkWidget *release_entry;       // numeric entry for release time
     
     // Status
     GtkWidget *status_text;
@@ -106,8 +114,27 @@ private:
 
     // oscillator control callbacks
     static void onFreqChanged(GtkRange* range, gpointer userData);
+    static void onFreqEntryActivated(GtkEntry* entry, gpointer userData);
     static void onDetuneChanged(GtkRange* range, gpointer userData);
+    static void onDetuneEntryActivated(GtkEntry* entry, gpointer userData);
     static void onWaveformChanged(GtkComboBox* combo, gpointer userData);
+
+    // filter control callbacks
+    static void onCutoffChanged(GtkRange* range, gpointer userData);
+    static void onCutoffEntryActivated(GtkEntry* entry, gpointer userData);
+    static void onResChanged(GtkRange* range, gpointer userData);
+    static void onResEntryActivated(GtkEntry* entry, gpointer userData);
+    static void onFilterTypeChanged(GtkComboBox* combo, gpointer userData);
+
+    // envelope control callbacks
+    static void onAttackChanged(GtkRange* range, gpointer userData);
+    static void onAttackEntryActivated(GtkEntry* entry, gpointer userData);
+    static void onDecayChanged(GtkRange* range, gpointer userData);
+    static void onDecayEntryActivated(GtkEntry* entry, gpointer userData);
+    static void onSustainChanged(GtkRange* range, gpointer userData);
+    static void onSustainEntryActivated(GtkEntry* entry, gpointer userData);
+    static void onReleaseChanged(GtkRange* range, gpointer userData);
+    static void onReleaseEntryActivated(GtkEntry* entry, gpointer userData);
 
     // Sequencer control callbacks
     static gboolean sequencerTimeoutCallback(gpointer data);

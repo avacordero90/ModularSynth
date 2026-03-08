@@ -55,6 +55,13 @@ public:
     void setOscillatorWavetable(size_t oscIndex, const std::string& wavetableName);
     void setOscillatorFrequency(size_t oscIndex, float frequency);
     void setOscillatorDetune(size_t oscIndex, float cents);
+    void setFilterCutoff(size_t filterIndex, float cutoff);
+    void setFilterResonance(size_t filterIndex, float resonance);
+    void setFilterType(size_t filterIndex, FilterType type);
+    void setEnvelopeAttack(size_t envIndex, float attack);
+    void setEnvelopeDecay(size_t envIndex, float decay);
+    void setEnvelopeSustain(size_t envIndex, float sustain);
+    void setEnvelopeRelease(size_t envIndex, float release);
     
     // Audio generation helpers
     bool areWavetablesInitialized() const;

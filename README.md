@@ -55,20 +55,23 @@ The application exposes the synth engine through a GTK GUI. Parameters are manag
 ### Parameters by Module
 
 #### Oscillator
-- Frequency: 20 Hz to 20,000 Hz (modulatable)
-- Detune: -1200 cents to 1200 cents (modulatable)  
+- Frequency: 20 Hz to 5,000 Hz (modifiable via slider or direct entry, realistic listening range)
+- Detune: -1200 cents to 1200 cents (modulatable).  
+  A text box next to the slider allows precise numeric entry.
 - Waveform: 0-5 selection (combo box)
 
+> **Note:** the built-in wavetables now use 8 192 samples for each cycle, so the default sine tone is much smoother and free of stepped artifacts at high pitches.
+
 #### Filter
-- Cutoff Frequency: 20 Hz to 20,000 Hz (modulatable)
-- Resonance: 0.1 to 10.0 Q factor (modulatable)
+- Cutoff Frequency: 20 Hz to 20,000 Hz (modifiable via slider or direct entry)
+- Resonance: 0.1 to 10.0 Q factor (modifiable via slider or direct entry)
 - Filter Type: 8 different filter types (combo box)
 
 #### Envelope
-- Attack Time: 0.001 s to 5.0 s (modulatable)
-- Decay Time: 0.001 s to 5.0 s (modulatable)
-- Sustain Level: 0.0 to 1.0 (modulatable)
-- Release Time: 0.001 s to 5.0 s (modulatable)
+- Attack Time: 0.001 s to 5.0 s (modifiable via slider or direct entry)
+- Decay Time: 0.001 s to 5.0 s (modifiable via slider or direct entry)
+- Sustain Level: 0.0 to 1.0 (modifiable via slider or direct entry)
+- Release Time: 0.001 s to 5.0 s (modifiable via slider or direct entry)
 
 #### Wavetable
 - Selection: Combo box with wavetable list

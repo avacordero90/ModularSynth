@@ -8,6 +8,7 @@
 SynthComponent::SynthComponent()
     : main_window(nullptr),
       wavetableManager(nullptr),
+      freq_entry(nullptr),
       pipeline(nullptr),
       isArmed(false) {
     
@@ -56,15 +57,21 @@ void SynthComponent::setupOscillatorSection() {
     GtkWidget *osc_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(osc_box), 10);
     
-    // Frequency slider
+    // Frequency slider + entry (20–5000 Hz realistic audioband)
     freq_label = gtk_label_new("Frequency (Hz): 440");
     gtk_box_pack_start(GTK_BOX(osc_box), freq_label, FALSE, FALSE, 0);
     
-    freq_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 20.0, 20000.0, 1.0);
+    freq_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 20.0, 5000.0, 1.0);
     gtk_scale_set_value_pos(GTK_SCALE(freq_scale), GTK_POS_RIGHT);
     gtk_range_set_value(GTK_RANGE(freq_scale), 440.0);
     g_signal_connect(freq_scale, "value-changed", G_CALLBACK(SynthComponent::onFreqChanged), this);
     gtk_box_pack_start(GTK_BOX(osc_box), freq_scale, FALSE, FALSE, 0);
+
+    // Text entry for frequency to allow direct numeric input
+    freq_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(freq_entry), "440");
+    gtk_box_pack_start(GTK_BOX(osc_box), freq_entry, FALSE, FALSE, 0);
+    g_signal_connect(freq_entry, "activate", G_CALLBACK(SynthComponent::onFreqEntryActivated), this);
     
     // Detune slider
     detune_label = gtk_label_new("Detune (cents): 0");
@@ -75,6 +82,12 @@ void SynthComponent::setupOscillatorSection() {
     gtk_range_set_value(GTK_RANGE(detune_scale), 0.0);
     g_signal_connect(detune_scale, "value-changed", G_CALLBACK(SynthComponent::onDetuneChanged), this);
     gtk_box_pack_start(GTK_BOX(osc_box), detune_scale, FALSE, FALSE, 0);
+
+    // Text entry for detune so user can type precise cents value
+    detune_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(detune_entry), "0");
+    gtk_box_pack_start(GTK_BOX(osc_box), detune_entry, FALSE, FALSE, 0);
+    g_signal_connect(detune_entry, "activate", G_CALLBACK(SynthComponent::onDetuneEntryActivated), this);
     
     // Waveform combo
     waveform_label = gtk_label_new("Waveform:");
@@ -103,7 +116,14 @@ void SynthComponent::setupFilterSection() {
     cutoff_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 20.0, 20000.0, 1.0);
     gtk_scale_set_value_pos(GTK_SCALE(cutoff_scale), GTK_POS_RIGHT);
     gtk_range_set_value(GTK_RANGE(cutoff_scale), 1000.0);
+    g_signal_connect(cutoff_scale, "value-changed", G_CALLBACK(SynthComponent::onCutoffChanged), this);
     gtk_box_pack_start(GTK_BOX(filter_box), cutoff_scale, FALSE, FALSE, 0);
+
+    // Text entry for cutoff frequency
+    cutoff_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(cutoff_entry), "1000");
+    gtk_box_pack_start(GTK_BOX(filter_box), cutoff_entry, FALSE, FALSE, 0);
+    g_signal_connect(cutoff_entry, "activate", G_CALLBACK(SynthComponent::onCutoffEntryActivated), this);
     
     // Resonance slider
     res_label = gtk_label_new("Resonance: 0.71");
@@ -112,7 +132,14 @@ void SynthComponent::setupFilterSection() {
     res_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.1, 10.0, 0.1);
     gtk_scale_set_value_pos(GTK_SCALE(res_scale), GTK_POS_RIGHT);
     gtk_range_set_value(GTK_RANGE(res_scale), 0.707);
+    g_signal_connect(res_scale, "value-changed", G_CALLBACK(SynthComponent::onResChanged), this);
     gtk_box_pack_start(GTK_BOX(filter_box), res_scale, FALSE, FALSE, 0);
+
+    // Text entry for resonance
+    res_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(res_entry), "0.71");
+    gtk_box_pack_start(GTK_BOX(filter_box), res_entry, FALSE, FALSE, 0);
+    g_signal_connect(res_entry, "activate", G_CALLBACK(SynthComponent::onResEntryActivated), this);
     
     // Filter type combo
     filter_type_label = gtk_label_new("Filter Type:");
@@ -123,6 +150,7 @@ void SynthComponent::setupFilterSection() {
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(filter_type_combo), NULL, "Highpass");
     gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(filter_type_combo), NULL, "Bandpass");
     gtk_combo_box_set_active(GTK_COMBO_BOX(filter_type_combo), 0);
+    g_signal_connect(filter_type_combo, "changed", G_CALLBACK(SynthComponent::onFilterTypeChanged), this);
     gtk_box_pack_start(GTK_BOX(filter_box), filter_type_combo, FALSE, FALSE, 0);
     
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), filter_box, gtk_label_new("Filter"));
@@ -139,7 +167,14 @@ void SynthComponent::setupEnvelopeSection() {
     attack_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.001, 5.0, 0.001);
     gtk_scale_set_value_pos(GTK_SCALE(attack_scale), GTK_POS_RIGHT);
     gtk_range_set_value(GTK_RANGE(attack_scale), 0.01);
+    g_signal_connect(attack_scale, "value-changed", G_CALLBACK(SynthComponent::onAttackChanged), this);
     gtk_box_pack_start(GTK_BOX(env_box), attack_scale, FALSE, FALSE, 0);
+
+    // Text entry for attack time
+    attack_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(attack_entry), "0.01");
+    gtk_box_pack_start(GTK_BOX(env_box), attack_entry, FALSE, FALSE, 0);
+    g_signal_connect(attack_entry, "activate", G_CALLBACK(SynthComponent::onAttackEntryActivated), this);
     
     // Decay slider
     decay_label = gtk_label_new("Decay (s): 0.1");
@@ -148,7 +183,14 @@ void SynthComponent::setupEnvelopeSection() {
     decay_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.001, 5.0, 0.001);
     gtk_scale_set_value_pos(GTK_SCALE(decay_scale), GTK_POS_RIGHT);
     gtk_range_set_value(GTK_RANGE(decay_scale), 0.1);
+    g_signal_connect(decay_scale, "value-changed", G_CALLBACK(SynthComponent::onDecayChanged), this);
     gtk_box_pack_start(GTK_BOX(env_box), decay_scale, FALSE, FALSE, 0);
+
+    // Text entry for decay time
+    decay_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(decay_entry), "0.1");
+    gtk_box_pack_start(GTK_BOX(env_box), decay_entry, FALSE, FALSE, 0);
+    g_signal_connect(decay_entry, "activate", G_CALLBACK(SynthComponent::onDecayEntryActivated), this);
     
     // Sustain slider
     sustain_label = gtk_label_new("Sustain: 0.7");
@@ -157,7 +199,14 @@ void SynthComponent::setupEnvelopeSection() {
     sustain_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.0, 1.0, 0.01);
     gtk_scale_set_value_pos(GTK_SCALE(sustain_scale), GTK_POS_RIGHT);
     gtk_range_set_value(GTK_RANGE(sustain_scale), 0.7);
+    g_signal_connect(sustain_scale, "value-changed", G_CALLBACK(SynthComponent::onSustainChanged), this);
     gtk_box_pack_start(GTK_BOX(env_box), sustain_scale, FALSE, FALSE, 0);
+
+    // Text entry for sustain level
+    sustain_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(sustain_entry), "0.7");
+    gtk_box_pack_start(GTK_BOX(env_box), sustain_entry, FALSE, FALSE, 0);
+    g_signal_connect(sustain_entry, "activate", G_CALLBACK(SynthComponent::onSustainEntryActivated), this);
     
     // Release slider
     release_label = gtk_label_new("Release (s): 0.3");
@@ -166,7 +215,14 @@ void SynthComponent::setupEnvelopeSection() {
     release_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0.001, 5.0, 0.001);
     gtk_scale_set_value_pos(GTK_SCALE(release_scale), GTK_POS_RIGHT);
     gtk_range_set_value(GTK_RANGE(release_scale), 0.3);
+    g_signal_connect(release_scale, "value-changed", G_CALLBACK(SynthComponent::onReleaseChanged), this);
     gtk_box_pack_start(GTK_BOX(env_box), release_scale, FALSE, FALSE, 0);
+
+    // Text entry for release time
+    release_entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(release_entry), "0.3");
+    gtk_box_pack_start(GTK_BOX(env_box), release_entry, FALSE, FALSE, 0);
+    g_signal_connect(release_entry, "activate", G_CALLBACK(SynthComponent::onReleaseEntryActivated), this);
     
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), env_box, gtk_label_new("Envelope"));
 }
@@ -177,10 +233,12 @@ void SynthComponent::initializeSynth() {
         wavetableManager = new WavetableManager();
         
         // Generate standard wavetables with larger size for better quality
-        wavetableManager->generateSineWave("sine", 2048);
-        wavetableManager->generateSquareWave("square", 2048);
-        wavetableManager->generateSawtoothWave("sawtooth", 2048);
-        wavetableManager->generateTriangleWave("triangle", 2048);
+// generate higher‑resolution tables so the sine tone is smoother
+    const size_t highRes = 8192;
+    wavetableManager->generateSineWave("sine", highRes);
+    wavetableManager->generateSquareWave("square", highRes);
+    wavetableManager->generateSawtoothWave("sawtooth", highRes);
+    wavetableManager->generateTriangleWave("triangle", highRes);
         
         // Create audio pipeline with 44.1kHz sample rate
         pipeline = new AudioPipeline(wavetableManager, 44100.0f);
@@ -275,9 +333,33 @@ void SynthComponent::onFreqChanged(GtkRange* range, gpointer userData) {
     char buf[64];
     snprintf(buf, sizeof(buf), "Frequency (Hz): %.1f", val);
     gtk_label_set_text(GTK_LABEL(self->freq_label), buf);
+    // also update entry if present
+    if (self->freq_entry) {
+        char numbuf[32];
+        snprintf(numbuf, sizeof(numbuf), "%.1f", val);
+        gtk_entry_set_text(GTK_ENTRY(self->freq_entry), numbuf);
+    }
     if (self->pipeline) {
         self->pipeline->setOscillatorFrequency(0, static_cast<float>(val));
         std::cout << "Frequency set to " << val << " Hz" << std::endl;
+    }
+}
+
+void SynthComponent::onFreqEntryActivated(GtkEntry* entry, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    const char* text = gtk_entry_get_text(entry);
+    try {
+        double val = std::stod(text);
+        if (val < 20.0) val = 20.0;
+        if (val > 5000.0) val = 5000.0;
+        gtk_range_set_value(GTK_RANGE(self->freq_scale), val);
+        // onFreqChanged will handle updating label/pipeline
+    } catch (...) {
+        // invalid input; ignore or reset to current slider value
+        double cur = gtk_range_get_value(GTK_RANGE(self->freq_scale));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.1f", cur);
+        gtk_entry_set_text(GTK_ENTRY(entry), buf);
     }
 }
 
@@ -287,9 +369,259 @@ void SynthComponent::onDetuneChanged(GtkRange* range, gpointer userData) {
     char buf[64];
     snprintf(buf, sizeof(buf), "Detune (cents): %.0f", val);
     gtk_label_set_text(GTK_LABEL(self->detune_label), buf);
+    // mirror value into entry field if available
+    if (self->detune_entry) {
+        char numbuf[32];
+        snprintf(numbuf, sizeof(numbuf), "%.0f", val);
+        gtk_entry_set_text(GTK_ENTRY(self->detune_entry), numbuf);
+    }
     if (self->pipeline) {
         self->pipeline->setOscillatorDetune(0, static_cast<float>(val));
         std::cout << "Detune set to " << val << " cents" << std::endl;
+    }
+}
+
+void SynthComponent::onDetuneEntryActivated(GtkEntry* entry, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    const char* text = gtk_entry_get_text(entry);
+    try {
+        double val = std::stod(text);
+        if (val < -1200.0) val = -1200.0;
+        if (val > 1200.0) val = 1200.0;
+        gtk_range_set_value(GTK_RANGE(self->detune_scale), val);
+        // onDetuneChanged will propagate to label/pipeline
+    } catch (...) {
+        double cur = gtk_range_get_value(GTK_RANGE(self->detune_scale));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.0f", cur);
+        gtk_entry_set_text(GTK_ENTRY(entry), buf);
+    }
+}
+
+void SynthComponent::onCutoffChanged(GtkRange* range, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    double val = gtk_range_get_value(range);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Cutoff (Hz): %.1f", val);
+    gtk_label_set_text(GTK_LABEL(self->cutoff_label), buf);
+    // mirror value into entry field if available
+    if (self->cutoff_entry) {
+        char numbuf[32];
+        snprintf(numbuf, sizeof(numbuf), "%.1f", val);
+        gtk_entry_set_text(GTK_ENTRY(self->cutoff_entry), numbuf);
+    }
+    if (self->pipeline) {
+        self->pipeline->setFilterCutoff(0, static_cast<float>(val));
+        std::cout << "Cutoff set to " << val << " Hz" << std::endl;
+    }
+}
+
+void SynthComponent::onCutoffEntryActivated(GtkEntry* entry, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    const char* text = gtk_entry_get_text(entry);
+    try {
+        double val = std::stod(text);
+        if (val < 20.0) val = 20.0;
+        if (val > 20000.0) val = 20000.0;
+        gtk_range_set_value(GTK_RANGE(self->cutoff_scale), val);
+        // onCutoffChanged will propagate to label/pipeline
+    } catch (...) {
+        double cur = gtk_range_get_value(GTK_RANGE(self->cutoff_scale));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.1f", cur);
+        gtk_entry_set_text(GTK_ENTRY(entry), buf);
+    }
+}
+
+void SynthComponent::onResChanged(GtkRange* range, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    double val = gtk_range_get_value(range);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Resonance: %.2f", val);
+    gtk_label_set_text(GTK_LABEL(self->res_label), buf);
+    // mirror value into entry field if available
+    if (self->res_entry) {
+        char numbuf[32];
+        snprintf(numbuf, sizeof(numbuf), "%.2f", val);
+        gtk_entry_set_text(GTK_ENTRY(self->res_entry), numbuf);
+    }
+    if (self->pipeline) {
+        self->pipeline->setFilterResonance(0, static_cast<float>(val));
+        std::cout << "Resonance set to " << val << std::endl;
+    }
+}
+
+void SynthComponent::onResEntryActivated(GtkEntry* entry, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    const char* text = gtk_entry_get_text(entry);
+    try {
+        double val = std::stod(text);
+        if (val < 0.1) val = 0.1;
+        if (val > 10.0) val = 10.0;
+        gtk_range_set_value(GTK_RANGE(self->res_scale), val);
+        // onResChanged will propagate to label/pipeline
+    } catch (...) {
+        double cur = gtk_range_get_value(GTK_RANGE(self->res_scale));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.2f", cur);
+        gtk_entry_set_text(GTK_ENTRY(entry), buf);
+    }
+}
+
+void SynthComponent::onFilterTypeChanged(GtkComboBox* combo, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    int idx = gtk_combo_box_get_active(combo);
+    if (self->pipeline) {
+        // Map index to FilterType
+        FilterType type;
+        switch (idx) {
+            case 0: type = FilterType::LOWPASS; break;
+            case 1: type = FilterType::HIGHPASS; break;
+            case 2: type = FilterType::BANDPASS; break;
+            default: type = FilterType::LOWPASS; break;
+        }
+        self->pipeline->setFilterType(0, type);
+        std::cout << "Filter type set to " << idx << std::endl;
+    }
+}
+
+void SynthComponent::onAttackChanged(GtkRange* range, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    double val = gtk_range_get_value(range);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Attack (s): %.3f", val);
+    gtk_label_set_text(GTK_LABEL(self->attack_label), buf);
+    // mirror value into entry field if available
+    if (self->attack_entry) {
+        char numbuf[32];
+        snprintf(numbuf, sizeof(numbuf), "%.3f", val);
+        gtk_entry_set_text(GTK_ENTRY(self->attack_entry), numbuf);
+    }
+    if (self->pipeline) {
+        self->pipeline->setEnvelopeAttack(0, static_cast<float>(val));
+        std::cout << "Attack set to " << val << " s" << std::endl;
+    }
+}
+
+void SynthComponent::onDecayChanged(GtkRange* range, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    double val = gtk_range_get_value(range);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Decay (s): %.3f", val);
+    gtk_label_set_text(GTK_LABEL(self->decay_label), buf);
+    // mirror value into entry field if available
+    if (self->decay_entry) {
+        char numbuf[32];
+        snprintf(numbuf, sizeof(numbuf), "%.3f", val);
+        gtk_entry_set_text(GTK_ENTRY(self->decay_entry), numbuf);
+    }
+    if (self->pipeline) {
+        self->pipeline->setEnvelopeDecay(0, static_cast<float>(val));
+        std::cout << "Decay set to " << val << " s" << std::endl;
+    }
+}
+
+void SynthComponent::onSustainChanged(GtkRange* range, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    double val = gtk_range_get_value(range);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Sustain: %.2f", val);
+    gtk_label_set_text(GTK_LABEL(self->sustain_label), buf);
+    // mirror value into entry field if available
+    if (self->sustain_entry) {
+        char numbuf[32];
+        snprintf(numbuf, sizeof(numbuf), "%.2f", val);
+        gtk_entry_set_text(GTK_ENTRY(self->sustain_entry), numbuf);
+    }
+    if (self->pipeline) {
+        self->pipeline->setEnvelopeSustain(0, static_cast<float>(val));
+        std::cout << "Sustain set to " << val << std::endl;
+    }
+}
+
+void SynthComponent::onReleaseChanged(GtkRange* range, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    double val = gtk_range_get_value(range);
+    char buf[64];
+    snprintf(buf, sizeof(buf), "Release (s): %.3f", val);
+    gtk_label_set_text(GTK_LABEL(self->release_label), buf);
+    // mirror value into entry field if available
+    if (self->release_entry) {
+        char numbuf[32];
+        snprintf(numbuf, sizeof(numbuf), "%.3f", val);
+        gtk_entry_set_text(GTK_ENTRY(self->release_entry), numbuf);
+    }
+    if (self->pipeline) {
+        self->pipeline->setEnvelopeRelease(0, static_cast<float>(val));
+        std::cout << "Release set to " << val << " s" << std::endl;
+    }
+}
+
+void SynthComponent::onAttackEntryActivated(GtkEntry* entry, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    const char* text = gtk_entry_get_text(entry);
+    try {
+        double val = std::stod(text);
+        if (val < 0.001) val = 0.001;
+        if (val > 5.0) val = 5.0;
+        gtk_range_set_value(GTK_RANGE(self->attack_scale), val);
+        // onAttackChanged will propagate to label/pipeline
+    } catch (...) {
+        double cur = gtk_range_get_value(GTK_RANGE(self->attack_scale));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.3f", cur);
+        gtk_entry_set_text(GTK_ENTRY(entry), buf);
+    }
+}
+
+void SynthComponent::onDecayEntryActivated(GtkEntry* entry, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    const char* text = gtk_entry_get_text(entry);
+    try {
+        double val = std::stod(text);
+        if (val < 0.001) val = 0.001;
+        if (val > 5.0) val = 5.0;
+        gtk_range_set_value(GTK_RANGE(self->decay_scale), val);
+        // onDecayChanged will propagate to label/pipeline
+    } catch (...) {
+        double cur = gtk_range_get_value(GTK_RANGE(self->decay_scale));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.3f", cur);
+        gtk_entry_set_text(GTK_ENTRY(entry), buf);
+    }
+}
+
+void SynthComponent::onSustainEntryActivated(GtkEntry* entry, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    const char* text = gtk_entry_get_text(entry);
+    try {
+        double val = std::stod(text);
+        if (val < 0.0) val = 0.0;
+        if (val > 1.0) val = 1.0;
+        gtk_range_set_value(GTK_RANGE(self->sustain_scale), val);
+        // onSustainChanged will propagate to label/pipeline
+    } catch (...) {
+        double cur = gtk_range_get_value(GTK_RANGE(self->sustain_scale));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.2f", cur);
+        gtk_entry_set_text(GTK_ENTRY(entry), buf);
+    }
+}
+
+void SynthComponent::onReleaseEntryActivated(GtkEntry* entry, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    const char* text = gtk_entry_get_text(entry);
+    try {
+        double val = std::stod(text);
+        if (val < 0.001) val = 0.001;
+        if (val > 5.0) val = 5.0;
+        gtk_range_set_value(GTK_RANGE(self->release_scale), val);
+        // onReleaseChanged will propagate to label/pipeline
+    } catch (...) {
+        double cur = gtk_range_get_value(GTK_RANGE(self->release_scale));
+        char buf[32];
+        snprintf(buf, sizeof(buf), "%.3f", cur);
+        gtk_entry_set_text(GTK_ENTRY(entry), buf);
     }
 }
 

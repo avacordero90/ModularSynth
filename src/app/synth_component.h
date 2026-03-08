@@ -8,6 +8,9 @@
 #include "../modules/filter.h"
 #include "../modules/envelope.h"
 
+// forward declarations
+class AudioOutput;
+
 /**
  * Main synthesizer component for GTK GUI
  */
@@ -55,6 +58,9 @@ private:
     std::unique_ptr<Oscillator> oscillator;
     std::unique_ptr<Filter> filter;
     std::unique_ptr<Envelope> envelope;
+
+    // audio output subsystem (PortAudio)
+    AudioOutput* audioOutput;
 
 public:
     SynthComponent();

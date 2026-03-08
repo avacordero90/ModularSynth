@@ -1,5 +1,5 @@
 #include <gtk/gtk.h>
-#include "plugin/synth_component.h"
+#include "app/synth_component.h"
 
 int main(int argc, char *argv[]) {
     gtk_init(&argc, &argv);

@@ -20,6 +20,7 @@ private:
     // Pipeline state
     float sampleRate;
     size_t bufferSize;
+    bool wavetablesInitialized;
     
 public:
     AudioPipeline(WavetableManager* wm, float sampleRate = 44100.0f);
@@ -41,9 +42,20 @@ public:
     // Getters
     WavetableManager* getWavetableManager() const;
     float getSampleRate() const;
+    size_t getBufferSize() const; // size of the internal processing block
     
     // Configuration
     void setBufferSize(size_t size);
+    
+    // Wavetable generation and initialization
+    void initializeDefaultWavetables();
+    void generateWavetables();
+    void configureOscillatorsWithWavetables();
+    void setOscillatorWavetable(size_t oscIndex, const std::string& wavetableName);
+    void setOscillatorFrequency(size_t oscIndex, float frequency);
+    
+    // Audio generation helpers
+    bool areWavetablesInitialized() const;
 };
 
 #endif // AUDIO_PIPELINE_H

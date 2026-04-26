@@ -159,6 +159,7 @@ private:
     void startSequencer();
     void stopSequencer();
     void rebuildSequencerGrid(int newColumnCount);
+    void applySequencerSegments();
     guint calculateSequencerIntervalMs() const;
     void restartSequencerTimerIfRunning();
 

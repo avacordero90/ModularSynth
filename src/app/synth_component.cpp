@@ -847,6 +847,7 @@ void SynthComponent::onTimeSignatureDenominatorChanged(GtkComboBox* combo, gpoin
         case 3: self->timeSignatureDenominator = 16; break;
         default: self->timeSignatureDenominator = 4; break;
     }
+    self->applySequencerSegments();
     self->restartSequencerTimerIfRunning();
 }
 
@@ -956,6 +957,7 @@ void SynthComponent::setupSequencerSection() {
             g_signal_connect(toggle, "toggled", G_CALLBACK(SynthComponent::onGridToggle), this);
         }
     }
+    applySequencerSegments();
     gtk_box_pack_start(GTK_BOX(seq_box), sequencer_grid, TRUE, TRUE, 0);
 
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), seq_box, gtk_label_new("Sequencer"));
@@ -999,10 +1001,37 @@ void SynthComponent::rebuildSequencerGrid(int newColumnCount) {
             g_signal_connect(toggle, "toggled", G_CALLBACK(SynthComponent::onGridToggle), this);
         }
     }
+    applySequencerSegments();
     gtk_widget_show_all(sequencer_grid);
 
     currentStep = (sequencerColumns > 0) ? (currentStep % sequencerColumns) : 0;
     restartSequencerTimerIfRunning();
+}
+
+// Add visible spacing segments across columns from time-signature denominator.
+void SynthComponent::applySequencerSegments() {
+    if (seqButtons.empty() || seqButtons[0].empty()) {
+        return;
+    }
+
+    const int rows = static_cast<int>(seqButtons.size());
+    const int cols = static_cast<int>(seqButtons[0].size());
+    const int segmentSize = std::max(1, cols / std::max(1, timeSignatureDenominator));
+
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < cols; ++c) {
+            GtkWidget* toggle = seqButtons[r][c];
+            if (!toggle) {
+                continue;
+            }
+
+            const bool boundary = (c > 0) && (c % segmentSize == 0);
+            gtk_widget_set_margin_start(toggle, boundary ? 8 : 1);
+            gtk_widget_set_margin_end(toggle, 1);
+            gtk_widget_set_margin_top(toggle, 1);
+            gtk_widget_set_margin_bottom(toggle, 1);
+        }
+    }
 }
 
 // Calculate per-step timer interval from BPM, time signature, and column count.

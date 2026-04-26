@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <limits>
 
 class AudioPipeline {
 private:
@@ -22,6 +23,14 @@ private:
     float sampleRate;
     size_t bufferSize;
     bool wavetablesInitialized;
+
+    std::vector<size_t> oscillatorToFilter;
+    std::vector<size_t> filterToEnvelope;
+    std::vector<size_t> envelopeToOutput;
+    std::vector<float> mixBuffer;
+    std::vector<float> stageBuffer;
+    int activeMidiNote;
+    static constexpr size_t NO_CONNECTION = std::numeric_limits<size_t>::max();
     
 public:
     AudioPipeline(WavetableManager* wm, float sampleRate = 44100.0f);
@@ -67,8 +76,8 @@ public:
     bool areWavetablesInitialized() const;
 
     // convenience helpers for monophonic note triggering (used by sequencer/MIDI)
-    void noteOn(float frequency);
-    void noteOff();
+    void noteOn(float frequency, int noteNumber = -1);
+    void noteOff(int noteNumber = -1);
 
 };
 

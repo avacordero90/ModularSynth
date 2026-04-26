@@ -1,33 +1,41 @@
 #include "envelope.h"
 #include <cmath>
 
+// Initialize ADSR defaults and idle state.
 Envelope::Envelope() 
     : attackTime(0.01f), decayTime(0.1f), sustainLevel(0.7f), releaseTime(0.3f),
       value(0.0f), targetValue(0.0f), stepSize(0.0f), currentSegment(EnvelopeSegment::RELEASE),
       isRunning(false), isSustained(false), sampleRate(44100.0f) {}
 
+// Envelope owns no external resources.
 Envelope::~Envelope() = default;
 
+// Clamp attack to a small positive value to avoid divide-by-zero.
 void Envelope::setAttackTime(float time) {
     attackTime = std::max(0.001f, time);
 }
 
+// Clamp decay to a small positive value to avoid divide-by-zero.
 void Envelope::setDecayTime(float time) {
     decayTime = std::max(0.001f, time);
 }
 
+// Sustain is normalized to the [0, 1] gain range.
 void Envelope::setSustainLevel(float level) {
     sustainLevel = std::max(0.0f, std::min(level, 1.0f));
 }
 
+// Clamp release to a small positive value to avoid divide-by-zero.
 void Envelope::setReleaseTime(float time) {
     releaseTime = std::max(0.001f, time);
 }
 
+// Update runtime sample rate used by ADSR step calculations.
 void Envelope::setSampleRate(float rate) {
     sampleRate = rate;
 }
 
+// Start a new note by entering ATTACK from zero.
 void Envelope::triggerAttack() {
     currentSegment = EnvelopeSegment::ATTACK;
     targetValue = 1.0f;
@@ -37,6 +45,7 @@ void Envelope::triggerAttack() {
     isSustained = false;
 }
 
+// Move the running envelope into RELEASE from its current level.
 void Envelope::triggerRelease() {
     if (!isRunning) return;
     
@@ -47,6 +56,7 @@ void Envelope::triggerRelease() {
     isSustained = false;
 }
 
+// Hard reset to a silent, non-running state.
 void Envelope::reset() {
     value = 0.0f;
     targetValue = 0.0f;
@@ -56,6 +66,7 @@ void Envelope::reset() {
     isSustained = false;
 }
 
+// Advance one sample of the ADSR state machine and return current gain.
 float Envelope::process() {
     if (!isRunning) return 0.0f;
     
@@ -76,7 +87,12 @@ float Envelope::process() {
             if (value <= targetValue) {
                 value = targetValue;
                 isSustained = true;
+                currentSegment = EnvelopeSegment::SUSTAIN;
             }
+            break;
+
+        case EnvelopeSegment::SUSTAIN:
+            value = sustainLevel;
             break;
             
         case EnvelopeSegment::RELEASE:
@@ -92,30 +108,37 @@ float Envelope::process() {
     return value;
 }
 
+// Read current envelope gain value.
 float Envelope::getValue() const {
     return value;
 }
 
+// Envelope is finished once release reaches (or passes) zero.
 bool Envelope::isFinished() const {
     return !isRunning && value <= 0.0f;
 }
 
+// Getter for attack time in seconds.
 float Envelope::getAttackTime() const {
     return attackTime;
 }
 
+// Getter for decay time in seconds.
 float Envelope::getDecayTime() const {
     return decayTime;
 }
 
+// Getter for sustain level.
 float Envelope::getSustainLevel() const {
     return sustainLevel;
 }
 
+// Getter for release time in seconds.
 float Envelope::getReleaseTime() const {
     return releaseTime;
 }
 
+// Getter for current ADSR segment.
 EnvelopeSegment Envelope::getCurrentSegment() const {
     return currentSegment;
 }

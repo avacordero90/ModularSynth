@@ -1,16 +1,25 @@
 #include "synth_component.h"
 #include "../core/audio_output.h"
 #include <cstdio>
+#include <algorithm>
 #include <iostream>
 #include <vector>
 #include <cmath>
 
+// Build GTK UI shell and create all synth control sections.
 SynthComponent::SynthComponent()
     : main_window(nullptr),
       wavetableManager(nullptr),
       freq_entry(nullptr),
       pipeline(nullptr),
-      isArmed(false) {
+      isArmed(false),
+      activeMidiNote(-1),
+      columns_spin(nullptr),
+      time_sig_num_spin(nullptr),
+      time_sig_den_combo(nullptr),
+      sequencerColumns(16),
+      timeSignatureNumerator(4),
+      timeSignatureDenominator(4) {
     
     // Create main window
     main_window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -26,11 +35,11 @@ SynthComponent::SynthComponent()
     notebook = gtk_notebook_new();
     gtk_box_pack_start(GTK_BOX(vbox), notebook, TRUE, TRUE, 0);
     
-    // Setup sections
+    // Setup sections (sequencer first so it becomes notebook page 0)
+    setupSequencerSection();
     setupOscillatorSection();
     setupFilterSection();
     setupEnvelopeSection();
-    setupSequencerSection();
     setupArmControl();
     
     // Create status text view
@@ -47,11 +56,13 @@ SynthComponent::SynthComponent()
     g_signal_connect(main_window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 }
 
+// Stop sequencer/audio and release synth resources.
 SynthComponent::~SynthComponent() {
     stopSequencer();
     cleanupSynth();
 }
 
+// Create oscillator controls and bind callbacks.
 void SynthComponent::setupOscillatorSection() {
     // Create oscillator frame
     GtkWidget *osc_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
@@ -105,6 +116,7 @@ void SynthComponent::setupOscillatorSection() {
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), osc_box, gtk_label_new("Oscillator"));
 }
 
+// Create filter controls and bind callbacks.
 void SynthComponent::setupFilterSection() {
     GtkWidget *filter_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(filter_box), 10);
@@ -156,6 +168,7 @@ void SynthComponent::setupFilterSection() {
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), filter_box, gtk_label_new("Filter"));
 }
 
+// Create ADSR envelope controls and bind callbacks.
 void SynthComponent::setupEnvelopeSection() {
     GtkWidget *env_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5);
     gtk_container_set_border_width(GTK_CONTAINER(env_box), 10);
@@ -227,6 +240,7 @@ void SynthComponent::setupEnvelopeSection() {
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), env_box, gtk_label_new("Envelope"));
 }
 
+// Initialize synth engine, module graph, and MIDI callbacks.
 void SynthComponent::initializeSynth() {
     try {
         // Create and initialize wavetable manager
@@ -296,6 +310,7 @@ void SynthComponent::initializeSynth() {
     }
 }
 
+// Destroy runtime synth objects in safe dependency order.
 void SynthComponent::cleanupSynth() {
     if (audioOutput) {
         audioOutput->stop();
@@ -312,21 +327,25 @@ void SynthComponent::cleanupSynth() {
     }
 }
 
+// Show top-level window and run GTK main loop.
 void SynthComponent::show() {
     gtk_widget_show_all(main_window);
     gtk_main();
 }
 
+// Getter for top-level GTK window.
 GtkWidget* SynthComponent::getMainWindow() {
     return main_window;
 }
 
+// Update status text panel with latest message.
 void SynthComponent::updateStatus(const char* message) {
     GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(status_text));
     gtk_text_buffer_set_text(buffer, message, -1);
 }
 
 // oscillator callbacks
+// Handle frequency slider movement and propagate to engine/UI.
 void SynthComponent::onFreqChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     double val = gtk_range_get_value(range);
@@ -345,6 +364,7 @@ void SynthComponent::onFreqChanged(GtkRange* range, gpointer userData) {
     }
 }
 
+// Parse and clamp typed frequency value, then update slider.
 void SynthComponent::onFreqEntryActivated(GtkEntry* entry, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     const char* text = gtk_entry_get_text(entry);
@@ -363,6 +383,7 @@ void SynthComponent::onFreqEntryActivated(GtkEntry* entry, gpointer userData) {
     }
 }
 
+// Handle detune slider movement and propagate to engine/UI.
 void SynthComponent::onDetuneChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     double val = gtk_range_get_value(range);
@@ -381,6 +402,7 @@ void SynthComponent::onDetuneChanged(GtkRange* range, gpointer userData) {
     }
 }
 
+// Parse and clamp typed detune value, then update slider.
 void SynthComponent::onDetuneEntryActivated(GtkEntry* entry, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     const char* text = gtk_entry_get_text(entry);
@@ -398,6 +420,7 @@ void SynthComponent::onDetuneEntryActivated(GtkEntry* entry, gpointer userData) 
     }
 }
 
+// Handle cutoff slider movement and propagate to engine/UI.
 void SynthComponent::onCutoffChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     double val = gtk_range_get_value(range);
@@ -416,6 +439,7 @@ void SynthComponent::onCutoffChanged(GtkRange* range, gpointer userData) {
     }
 }
 
+// Parse and clamp typed cutoff value, then update slider.
 void SynthComponent::onCutoffEntryActivated(GtkEntry* entry, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     const char* text = gtk_entry_get_text(entry);
@@ -433,6 +457,7 @@ void SynthComponent::onCutoffEntryActivated(GtkEntry* entry, gpointer userData) 
     }
 }
 
+// Handle resonance slider movement and propagate to engine/UI.
 void SynthComponent::onResChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     double val = gtk_range_get_value(range);
@@ -451,6 +476,7 @@ void SynthComponent::onResChanged(GtkRange* range, gpointer userData) {
     }
 }
 
+// Parse and clamp typed resonance value, then update slider.
 void SynthComponent::onResEntryActivated(GtkEntry* entry, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     const char* text = gtk_entry_get_text(entry);
@@ -468,6 +494,7 @@ void SynthComponent::onResEntryActivated(GtkEntry* entry, gpointer userData) {
     }
 }
 
+// Map filter-type combobox selection into filter enum.
 void SynthComponent::onFilterTypeChanged(GtkComboBox* combo, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     int idx = gtk_combo_box_get_active(combo);
@@ -485,6 +512,7 @@ void SynthComponent::onFilterTypeChanged(GtkComboBox* combo, gpointer userData) 
     }
 }
 
+// Handle attack slider movement and propagate to engine/UI.
 void SynthComponent::onAttackChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     double val = gtk_range_get_value(range);
@@ -503,6 +531,7 @@ void SynthComponent::onAttackChanged(GtkRange* range, gpointer userData) {
     }
 }
 
+// Handle decay slider movement and propagate to engine/UI.
 void SynthComponent::onDecayChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     double val = gtk_range_get_value(range);
@@ -521,6 +550,7 @@ void SynthComponent::onDecayChanged(GtkRange* range, gpointer userData) {
     }
 }
 
+// Handle sustain slider movement and propagate to engine/UI.
 void SynthComponent::onSustainChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     double val = gtk_range_get_value(range);
@@ -539,6 +569,7 @@ void SynthComponent::onSustainChanged(GtkRange* range, gpointer userData) {
     }
 }
 
+// Handle release slider movement and propagate to engine/UI.
 void SynthComponent::onReleaseChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     double val = gtk_range_get_value(range);
@@ -557,6 +588,7 @@ void SynthComponent::onReleaseChanged(GtkRange* range, gpointer userData) {
     }
 }
 
+// Parse and clamp typed attack value, then update slider.
 void SynthComponent::onAttackEntryActivated(GtkEntry* entry, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     const char* text = gtk_entry_get_text(entry);
@@ -574,6 +606,7 @@ void SynthComponent::onAttackEntryActivated(GtkEntry* entry, gpointer userData) 
     }
 }
 
+// Parse and clamp typed decay value, then update slider.
 void SynthComponent::onDecayEntryActivated(GtkEntry* entry, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     const char* text = gtk_entry_get_text(entry);
@@ -591,6 +624,7 @@ void SynthComponent::onDecayEntryActivated(GtkEntry* entry, gpointer userData) {
     }
 }
 
+// Parse and clamp typed sustain value, then update slider.
 void SynthComponent::onSustainEntryActivated(GtkEntry* entry, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     const char* text = gtk_entry_get_text(entry);
@@ -608,6 +642,7 @@ void SynthComponent::onSustainEntryActivated(GtkEntry* entry, gpointer userData)
     }
 }
 
+// Parse and clamp typed release value, then update slider.
 void SynthComponent::onReleaseEntryActivated(GtkEntry* entry, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     const char* text = gtk_entry_get_text(entry);
@@ -625,6 +660,7 @@ void SynthComponent::onReleaseEntryActivated(GtkEntry* entry, gpointer userData)
     }
 }
 
+// Switch active oscillator wavetable from waveform selection.
 void SynthComponent::onWaveformChanged(GtkComboBox* combo, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     int idx = gtk_combo_box_get_active(combo);
@@ -643,6 +679,7 @@ void SynthComponent::onWaveformChanged(GtkComboBox* combo, gpointer userData) {
 }
 
 // arm control setup and callbacks
+// Create arm/disarm toggle and attach it into main layout.
 void SynthComponent::setupArmControl() {
     // add an "arm" toggle at the top of the main window
     GtkWidget *arm_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
@@ -659,12 +696,14 @@ void SynthComponent::setupArmControl() {
     isArmed = false;
 }
 
+// Forward arm-toggle widget state to component state handler.
 void SynthComponent::onArmToggled(GtkToggleButton* toggle, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     bool active = gtk_toggle_button_get_active(toggle);
     self->setArmed(active);
 }
 
+// Arm or disarm audio output and reset playing state on disarm.
 void SynthComponent::setArmed(bool armed) {
     if (armed == isArmed) return;
     isArmed = armed;
@@ -679,6 +718,7 @@ void SynthComponent::setArmed(bool armed) {
         }
         // ensure any playing notes stop
         if (pipeline) pipeline->noteOff();
+        activeMidiNote = -1;
         updateStatus("System disarmed");
     }
 }
@@ -688,12 +728,18 @@ void SynthComponent::setArmed(bool armed) {
  * Sequencer + MIDI helper implementations
  ********************************************************/
 
+/********************************************************
+ * Sequencer + MIDI helper implementations
+ ********************************************************/
+
+// Timer callback that advances sequencer one step per tick.
 gboolean SynthComponent::sequencerTimeoutCallback(gpointer data) {
     SynthComponent* self = static_cast<SynthComponent*>(data);
     self->advanceSequencer();
     return G_SOURCE_CONTINUE;
 }
 
+// Advance sequencer, emit note events, and rotate step index.
 void SynthComponent::advanceSequencer() {
     // stop any notes that were active on the previous step
     for (int note : prevActiveNotes) {
@@ -722,6 +768,7 @@ void SynthComponent::advanceSequencer() {
     currentStep = (currentStep + 1) % cols;
 }
 
+// Start sequencer timing loop when synth is armed.
 void SynthComponent::startSequencer() {
     if (sequencerRunning) return;
     if (!isArmed) {
@@ -730,12 +777,12 @@ void SynthComponent::startSequencer() {
     }
     sequencerRunning = true;
     currentStep = 0;
-    // convert BPM to interval for 16th-notes (4 per quarter note)
-    guint interval = (guint)(60000.0f / (sequencerBPM * 4.0f));
+    guint interval = calculateSequencerIntervalMs();
     sequencerTimeoutId = g_timeout_add(interval, sequencerTimeoutCallback, this);
     updateStatus("Sequencer started");
 }
 
+// Stop sequencer timing loop and release any held notes.
 void SynthComponent::stopSequencer() {
     if (!sequencerRunning) return;
     sequencerRunning = false;
@@ -753,29 +800,57 @@ void SynthComponent::stopSequencer() {
 }
 
 // static callbacks that forward to instance methods
+// Forward start-button click to sequencer start method.
 void SynthComponent::onStartButtonClicked(GtkWidget* widget, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     self->startSequencer();
 }
 
+// Forward stop-button click to sequencer stop method.
 void SynthComponent::onStopButtonClicked(GtkWidget* widget, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     self->stopSequencer();
 }
 
+// Update sequencer BPM and restart timer if already running.
 void SynthComponent::onTempoChanged(GtkRange* range, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     self->sequencerBPM = gtk_range_get_value(range);
     char buf[64];
     snprintf(buf, sizeof(buf), "Tempo: %.1f BPM", self->sequencerBPM);
     self->updateStatus(buf);
-    // if running, restart timer with new interval
-    if (self->sequencerRunning) {
-        self->stopSequencer();
-        self->startSequencer();
-    }
+    self->restartSequencerTimerIfRunning();
 }
 
+// Update sequencer column count and rebuild the editable grid.
+void SynthComponent::onColumnsChanged(GtkSpinButton* spin, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    int newCols = gtk_spin_button_get_value_as_int(spin);
+    self->rebuildSequencerGrid(newCols);
+}
+
+// Update time-signature numerator and refresh running timer.
+void SynthComponent::onTimeSignatureNumeratorChanged(GtkSpinButton* spin, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    self->timeSignatureNumerator = gtk_spin_button_get_value_as_int(spin);
+    self->restartSequencerTimerIfRunning();
+}
+
+// Update time-signature denominator and refresh running timer.
+void SynthComponent::onTimeSignatureDenominatorChanged(GtkComboBox* combo, gpointer userData) {
+    SynthComponent* self = static_cast<SynthComponent*>(userData);
+    int idx = gtk_combo_box_get_active(combo);
+    switch (idx) {
+        case 0: self->timeSignatureDenominator = 2; break;
+        case 1: self->timeSignatureDenominator = 4; break;
+        case 2: self->timeSignatureDenominator = 8; break;
+        case 3: self->timeSignatureDenominator = 16; break;
+        default: self->timeSignatureDenominator = 4; break;
+    }
+    self->restartSequencerTimerIfRunning();
+}
+
+// Persist grid toggle state in sequencer step matrix.
 void SynthComponent::onGridToggle(GtkToggleButton* toggle, gpointer userData) {
     SynthComponent* self = static_cast<SynthComponent*>(userData);
     int row = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(toggle), "row"));
@@ -784,30 +859,36 @@ void SynthComponent::onGridToggle(GtkToggleButton* toggle, gpointer userData) {
     self->seqState[row][col] = active;
 }
 
+// Convert MIDI note-on into pipeline trigger and track active note.
 void SynthComponent::handleMidiNoteOn(const MidiNote& note) {
     if (!isArmed) return;
     float freq = midiNoteToFrequency(note.noteNumber);
     if (pipeline) {
-        pipeline->noteOn(freq);
+        pipeline->noteOn(freq, note.noteNumber);
+        activeMidiNote = note.noteNumber;
     }
 }
 
+// Convert matching MIDI note-off into pipeline release trigger.
 void SynthComponent::handleMidiNoteOff(const MidiNote& note) {
     if (!isArmed) return;
-    if (pipeline) {
-        pipeline->noteOff();
+    if (pipeline && (activeMidiNote < 0 || note.noteNumber == activeMidiNote)) {
+        pipeline->noteOff(note.noteNumber);
+        activeMidiNote = -1;
     }
 }
 
+// Convert MIDI note number to equal-temperament frequency in Hz.
 float SynthComponent::midiNoteToFrequency(int noteNumber) const {
     return 440.0f * std::pow(2.0f, (noteNumber - 69) / 12.0f);
 }
 
+// Build step-sequencer UI and initialize sequencer state buffers.
 void SynthComponent::setupSequencerSection() {
     // make sure arm control exists before sequencer start
     // initialize state
     const int rows = 12;
-    const int cols = 16;
+    const int cols = sequencerColumns;
     sequencerBPM = 120.0f;
     currentStep = 0;
     sequencerRunning = false;
@@ -823,6 +904,35 @@ void SynthComponent::setupSequencerSection() {
     gtk_range_set_value(GTK_RANGE(tempo_scale), sequencerBPM);
     g_signal_connect(tempo_scale, "value-changed", G_CALLBACK(SynthComponent::onTempoChanged), this);
     gtk_box_pack_start(GTK_BOX(seq_box), tempo_scale, FALSE, FALSE, 0);
+
+    // column and time-signature controls
+    GtkWidget *settings_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    GtkWidget *cols_label = gtk_label_new("Columns:");
+    columns_spin = gtk_spin_button_new_with_range(4.0, 64.0, 1.0);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(columns_spin), sequencerColumns);
+    g_signal_connect(columns_spin, "value-changed", G_CALLBACK(SynthComponent::onColumnsChanged), this);
+
+    GtkWidget *time_sig_label = gtk_label_new("Time Sig:");
+    time_sig_num_spin = gtk_spin_button_new_with_range(1.0, 12.0, 1.0);
+    gtk_spin_button_set_value(GTK_SPIN_BUTTON(time_sig_num_spin), timeSignatureNumerator);
+    g_signal_connect(time_sig_num_spin, "value-changed", G_CALLBACK(SynthComponent::onTimeSignatureNumeratorChanged), this);
+
+    GtkWidget *slash_label = gtk_label_new("/");
+    time_sig_den_combo = gtk_combo_box_text_new();
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(time_sig_den_combo), nullptr, "2");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(time_sig_den_combo), nullptr, "4");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(time_sig_den_combo), nullptr, "8");
+    gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(time_sig_den_combo), nullptr, "16");
+    gtk_combo_box_set_active(GTK_COMBO_BOX(time_sig_den_combo), 1);
+    g_signal_connect(time_sig_den_combo, "changed", G_CALLBACK(SynthComponent::onTimeSignatureDenominatorChanged), this);
+
+    gtk_box_pack_start(GTK_BOX(settings_box), cols_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(settings_box), columns_spin, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(settings_box), time_sig_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(settings_box), time_sig_num_spin, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(settings_box), slash_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(settings_box), time_sig_den_combo, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(seq_box), settings_box, FALSE, FALSE, 0);
 
     // start/stop buttons
     GtkWidget *button_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
@@ -849,4 +959,73 @@ void SynthComponent::setupSequencerSection() {
     gtk_box_pack_start(GTK_BOX(seq_box), sequencer_grid, TRUE, TRUE, 0);
 
     gtk_notebook_append_page(GTK_NOTEBOOK(notebook), seq_box, gtk_label_new("Sequencer"));
+}
+
+// Rebuild sequencer grid while preserving any existing step state.
+void SynthComponent::rebuildSequencerGrid(int newColumnCount) {
+    if (newColumnCount < 1 || !sequencer_grid || seqState.empty()) {
+        return;
+    }
+
+    const int rows = static_cast<int>(seqState.size());
+    std::vector<std::vector<bool>> oldState = seqState;
+    const int oldCols = static_cast<int>(oldState[0].size());
+    sequencerColumns = newColumnCount;
+
+    seqState.assign(rows, std::vector<bool>(sequencerColumns, false));
+    seqButtons.assign(rows, std::vector<GtkWidget*>(sequencerColumns, nullptr));
+
+    const int copyCols = std::min(oldCols, sequencerColumns);
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < copyCols; ++c) {
+            seqState[r][c] = oldState[r][c];
+        }
+    }
+
+    GList* children = gtk_container_get_children(GTK_CONTAINER(sequencer_grid));
+    for (GList* child = children; child != nullptr; child = child->next) {
+        gtk_widget_destroy(GTK_WIDGET(child->data));
+    }
+    g_list_free(children);
+
+    for (int r = 0; r < rows; ++r) {
+        for (int c = 0; c < sequencerColumns; ++c) {
+            GtkWidget *toggle = gtk_toggle_button_new();
+            gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(toggle), seqState[r][c]);
+            gtk_grid_attach(GTK_GRID(sequencer_grid), toggle, c, r, 1, 1);
+            seqButtons[r][c] = toggle;
+            g_object_set_data(G_OBJECT(toggle), "row", GINT_TO_POINTER(r));
+            g_object_set_data(G_OBJECT(toggle), "col", GINT_TO_POINTER(c));
+            g_signal_connect(toggle, "toggled", G_CALLBACK(SynthComponent::onGridToggle), this);
+        }
+    }
+    gtk_widget_show_all(sequencer_grid);
+
+    currentStep = (sequencerColumns > 0) ? (currentStep % sequencerColumns) : 0;
+    restartSequencerTimerIfRunning();
+}
+
+// Calculate per-step timer interval from BPM, time signature, and column count.
+guint SynthComponent::calculateSequencerIntervalMs() const {
+    if (sequencerColumns <= 0 || sequencerBPM <= 0.0f) {
+        return 125;
+    }
+
+    const float msPerBeat = 60000.0f / sequencerBPM;
+    const float beatsPerBar = static_cast<float>(timeSignatureNumerator) *
+                              (4.0f / static_cast<float>(timeSignatureDenominator));
+    const float msPerBar = msPerBeat * beatsPerBar;
+    const float interval = msPerBar / static_cast<float>(sequencerColumns);
+    return static_cast<guint>(std::max(10.0f, interval));
+}
+
+// Recreate timer with updated interval if sequencer is already running.
+void SynthComponent::restartSequencerTimerIfRunning() {
+    if (!sequencerRunning) {
+        return;
+    }
+    if (sequencerTimeoutId) {
+        g_source_remove(sequencerTimeoutId);
+    }
+    sequencerTimeoutId = g_timeout_add(calculateSequencerIntervalMs(), sequencerTimeoutCallback, this);
 }

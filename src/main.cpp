@@ -1,6 +1,7 @@
 #include <gtk/gtk.h>
 #include "app/synth_component.h"
 
+// Application entry point: initialize GTK and run synth UI.
 int main(int argc, char *argv[]) {
     gtk_init(&argc, &argv);
     

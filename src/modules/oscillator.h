@@ -10,6 +10,7 @@ private:
     float phase;
     float frequency;
     float detune;
+    float sampleRate;
     std::string wavetableName;
     
 public:
@@ -21,6 +22,7 @@ public:
     void setWavetableName(const std::string& name);
     void setFrequency(float freq);
     void setDetune(float cents);
+    void setSampleRate(float rate);
     
     // Audio processing
     float process();
@@ -40,6 +42,7 @@ public:
     float getFrequency() const;
     float getPhase() const;
     Wavetable* getWavetable() const;
+    float getSampleRate() const;
     
     // Reset
     void reset();

@@ -3,11 +3,13 @@
 #include <string>
 
 // Minimalist GUI Implementation
+// Construct GUI model with basic controls enabled.
 MinimalistGUI::MinimalistGUI() : m_isVisible(true), m_advancedMode(false) {
     // Initialize basic UI elements
     initializeBasicControls();
 }
 
+// Populate the default control set for simple operation.
 void MinimalistGUI::initializeBasicControls() {
     // Clear existing controls
     controls.clear();
@@ -22,6 +24,7 @@ void MinimalistGUI::initializeBasicControls() {
     controls.push_back({"Envelope Decay", ControlType::SLIDER, 0.001f, 5.0f, 0.1f});
 }
 
+// Toggle between basic and advanced control sets.
 void MinimalistGUI::showAdvancedMode(bool show) {
     m_advancedMode = show;
     if (m_advancedMode) {
@@ -33,6 +36,7 @@ void MinimalistGUI::showAdvancedMode(bool show) {
     }
 }
 
+// Append extended controls used in advanced editing mode.
 void MinimalistGUI::setupAdvancedControls() {
     // Add more detailed controls for advanced users
     controls.push_back({"Filter Type", ControlType::COMBOBOX, 0.0f, 7.0f, 0.0f});
@@ -43,18 +47,22 @@ void MinimalistGUI::setupAdvancedControls() {
     // Add more advanced parameters as needed
 }
 
+// Toggle visibility state for host/UI embedding.
 void MinimalistGUI::toggleVisibility() {
     m_isVisible = !m_isVisible;
 }
 
+// Return whether advanced mode controls are active.
 bool MinimalistGUI::isAdvancedMode() const {
     return m_advancedMode;
 }
 
+// Return immutable view of active controls.
 const std::vector<Control>& MinimalistGUI::getControls() const {
     return controls;
 }
 
+// Return current visibility flag.
 bool MinimalistGUI::isVisible() const {
     return m_isVisible;
 }

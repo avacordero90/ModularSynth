@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cmath>
 
+// Construct VST wrapper and initialize parameter metadata.
 VSTPlugin::VSTPlugin() : PluginInterface(), isInitialized(false) {
     // Initialize VST-specific members
     vstEffect = nullptr; // This will be set by the host when the plugin is loaded
@@ -10,10 +11,12 @@ VSTPlugin::VSTPlugin() : PluginInterface(), isInitialized(false) {
     setupParameters();
 }
 
+// Ensure plugin-owned resources are released.
 VSTPlugin::~VSTPlugin() {
     cleanup();
 }
 
+// Set parameter value by flattened module-parameter index.
 void VSTPlugin::setParameterValue(int paramIndex, float value) {
     // Route parameter to appropriate module based on index
     int oscParamCount = oscillatorParams.size();
@@ -54,6 +57,7 @@ void VSTPlugin::setParameterValue(int paramIndex, float value) {
     }
 }
 
+// Read parameter value by flattened module-parameter index.
 float VSTPlugin::getParameterValue(int paramIndex) const {
     // Retrieve parameter from appropriate module based on index
     int oscParamCount = oscillatorParams.size();
@@ -83,6 +87,7 @@ float VSTPlugin::getParameterValue(int paramIndex) const {
     return 0.0f;
 }
 
+// Initialize plugin runtime state and defaults once.
 void VSTPlugin::initialize() {
     if (isInitialized) return;
     
@@ -121,6 +126,7 @@ void VSTPlugin::initialize() {
               << wavetableParams.size() << " Wavetable params." << std::endl;
 }
 
+// Process one block of audio and apply runtime modulation paths.
 void VSTPlugin::processAudio(float** inputs, float** outputs, size_t numInputs, size_t numOutputs, size_t bufferSize) {
     // Validation checks
     if (!isInitialized || !pipeline) {
@@ -341,6 +347,7 @@ void VSTPlugin::processAudio(float** inputs, float** outputs, size_t numInputs, 
     }
 }
 
+// Tear down plugin runtime resources and persist relevant state.
 void VSTPlugin::cleanup() {
     std::cout << "Cleaning up VST plugin..." << std::endl;
     
@@ -357,26 +364,32 @@ void VSTPlugin::cleanup() {
     std::cout << "VST plugin cleanup complete." << std::endl;
 }
 
+// Transfer ownership of host-provided VST effect object.
 void VSTPlugin::setVstEffect(AudioEffect* effect) {
     vstEffect = std::unique_ptr<AudioEffect>(effect);
 }
 
+// Transfer ownership of host-provided processor wrapper.
 void VSTPlugin::setProcessor(AudioProcessor* proc) {
     processor = std::unique_ptr<AudioProcessor>(proc);
 }
 
+// Return plugin display name.
 const char* VSTPlugin::getName() const {
     return "Modular Wavetable Synth";
 }
 
+// Return plugin vendor/manufacturer text.
 const char* VSTPlugin::getVendor() const {
     return "ModularAudio Inc.";
 }
 
+// Return plugin version encoded as integer.
 int VSTPlugin::getVersion() const {
     return 1000; // Version 1.0.0
 }
 
+// Configure I/O metadata and sample-rate dependent components.
 void VSTPlugin::configureAudioIO(size_t numInputs, size_t numOutputs, size_t sampleRate) {
     if (!pipeline) {
         std::cerr << "Error: Cannot configure audio I/O without pipeline" << std::endl;

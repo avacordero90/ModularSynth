@@ -4,6 +4,7 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -O3 -fPIC
 DEBUG_FLAGS = -g -DDEBUG
 TARGET = modular-synth
+TEST_TARGET = synth-tests
 
 # Source directories
 SRCDIR = src
@@ -18,6 +19,15 @@ SOURCES = $(wildcard $(SRCDIR)/core/*.cpp) \
           $(SRCDIR)/main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 DEPS = $(OBJECTS:.o=.d)
+TEST_SOURCES = tests/test_synth_core.cpp \
+          $(SRCDIR)/core/audio_pipeline.cpp \
+          $(SRCDIR)/core/wavetable.cpp \
+          $(SRCDIR)/core/wavetable_manager.cpp \
+          $(SRCDIR)/modules/envelope.cpp \
+          $(SRCDIR)/modules/filter.cpp \
+          $(SRCDIR)/modules/oscillator.cpp
+TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
+TEST_DEPS = $(TEST_OBJECTS:.o=.d)
 
 # Include directories
 INC_DIRS = $(SRCDIR) $(SRCDIR)/core $(SRCDIR)/modules $(SRCDIR)/app
@@ -53,8 +63,8 @@ $(TARGET): $(OBJECTS)
 # Clean build
 clean:
 	@echo "Cleaning..."
-	rm -f $(OBJECTS) $(DEPS)
-	rm -f $(TARGET)
+	rm -f $(OBJECTS) $(DEPS) $(TEST_OBJECTS) $(TEST_DEPS)
+	rm -f $(TARGET) $(TEST_TARGET)
 	@echo "Clean complete"
 
 # Debug target
@@ -65,10 +75,20 @@ debug: clean all
 run: $(TARGET)
 	./$(TARGET)
 
+# Run unit/smoke tests
+test: $(TEST_TARGET)
+	./$(TEST_TARGET)
+
+# Link test executable
+$(TEST_TARGET): $(TEST_OBJECTS)
+	@echo "Linking $(TEST_TARGET)..."
+	$(CXX) $(TEST_OBJECTS) -o $@ -pthread
+	@echo "Test build complete: $(TEST_TARGET)"
+
 # Rebuild target
 rebuild: clean all
 
-.PHONY: all clean debug run rebuild
+.PHONY: all clean debug run rebuild test
 
 # Include dependencies
--include $(DEPS)
+-include $(DEPS) $(TEST_DEPS)

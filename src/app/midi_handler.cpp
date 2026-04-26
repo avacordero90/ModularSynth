@@ -1,6 +1,7 @@
 #include "midi_handler.h"
 #include <iostream>
 
+// Initialize MIDI note state and transport clock defaults.
 MidiHandler::MidiHandler() : activeNotes(128, false) {
     // Initialize MIDI clock
     midiClock.tempo = 120.0f;
@@ -8,8 +9,10 @@ MidiHandler::MidiHandler() : activeNotes(128, false) {
     midiClock.tickCount = 0;
 }
 
+// Defaulted destructor; callbacks and containers self-manage.
 MidiHandler::~MidiHandler() = default;
 
+// Decode a short MIDI message and dispatch to registered callbacks.
 void MidiHandler::processMidiMessage(uint8_t status, uint8_t data1, uint8_t data2) {
     // Extract channel and message type
     int messageType = status & 0xF0;
@@ -108,6 +111,7 @@ void MidiHandler::processMidiMessage(uint8_t status, uint8_t data1, uint8_t data
     }
 }
 
+// Decode vector-form MIDI bytes into status/data tuple.
 void MidiHandler::processMidiMessage(const std::vector<uint8_t>& message) {
     if (message.empty()) return;
     
@@ -118,54 +122,67 @@ void MidiHandler::processMidiMessage(const std::vector<uint8_t>& message) {
     processMidiMessage(status, data1, data2);
 }
 
+// Register note-on event callback.
 void MidiHandler::setNoteOnCallback(std::function<void(MidiNote)> callback) {
     noteOnCallback = callback;
 }
 
+// Register note-off event callback.
 void MidiHandler::setNoteOffCallback(std::function<void(MidiNote)> callback) {
     noteOffCallback = callback;
 }
 
+// Register control-change event callback.
 void MidiHandler::setControllerChangeCallback(std::function<void(MidiController)> callback) {
     controllerChangeCallback = callback;
 }
 
+// Register pitch-bend event callback.
 void MidiHandler::setPitchBendCallback(std::function<void(int, float)> callback) {
     pitchBendCallback = callback;
 }
 
+// Register MIDI clock tick callback.
 void MidiHandler::setClockCallback(std::function<void()> callback) {
     clockCallback = callback;
 }
 
+// Register MIDI start callback.
 void MidiHandler::setStartCallback(std::function<void()> callback) {
     startCallback = callback;
 }
 
+// Register MIDI continue callback.
 void MidiHandler::setContinueCallback(std::function<void()> callback) {
     continueCallback = callback;
 }
 
+// Register MIDI stop callback.
 void MidiHandler::setStopCallback(std::function<void()> callback) {
     stopCallback = callback;
 }
 
+// Increment internal clock tick counter.
 void MidiHandler::updateClock() {
     midiClock.tickCount++;
 }
 
+// Mark transport clock as running.
 void MidiHandler::startClock() {
     midiClock.isRunning = true;
 }
 
+// Mark transport clock as stopped.
 void MidiHandler::stopClock() {
     midiClock.isRunning = false;
 }
 
+// Set transport tempo (BPM) for downstream timing consumers.
 void MidiHandler::setFrameRate(float bpm) {
     midiClock.tempo = bpm;
 }
 
+// Count active note flags currently held in note-state table.
 int MidiHandler::getActiveNoteCount() const {
     int count = 0;
     for (bool isActive : activeNotes) {
@@ -174,6 +191,7 @@ int MidiHandler::getActiveNoteCount() const {
     return count;
 }
 
+// Query whether a specific MIDI note is currently active.
 bool MidiHandler::isNoteActive(int noteNumber) const {
     if (noteNumber >= 0 && noteNumber < 128) {
         return activeNotes[noteNumber];
@@ -181,6 +199,7 @@ bool MidiHandler::isNoteActive(int noteNumber) const {
     return false;
 }
 
+// Return immutable reference to current MIDI clock state.
 const MidiClock& MidiHandler::getMidiClock() const {
     return midiClock;
 }

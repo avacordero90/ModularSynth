@@ -84,15 +84,22 @@ private:
     GtkWidget *start_button;
     GtkWidget *stop_button;
     GtkWidget *tempo_scale;
+    GtkWidget *columns_spin;
+    GtkWidget *time_sig_num_spin;
+    GtkWidget *time_sig_den_combo;
 
     // sequencer state (rows = notes, columns = steps)
     std::vector<std::vector<GtkWidget*>> seqButtons;
     std::vector<std::vector<bool>> seqState;
     std::vector<int> prevActiveNotes;
+    int activeMidiNote;
     int currentStep;
     bool sequencerRunning;
     guint sequencerTimeoutId;
     float sequencerBPM;
+    int sequencerColumns;
+    int timeSignatureNumerator;
+    int timeSignatureDenominator;
 
 public:
     SynthComponent();
@@ -142,12 +149,18 @@ private:
     static void onStartButtonClicked(GtkWidget* widget, gpointer userData);
     static void onStopButtonClicked(GtkWidget* widget, gpointer userData);
     static void onTempoChanged(GtkRange* range, gpointer userData);
+    static void onColumnsChanged(GtkSpinButton* spin, gpointer userData);
+    static void onTimeSignatureNumeratorChanged(GtkSpinButton* spin, gpointer userData);
+    static void onTimeSignatureDenominatorChanged(GtkComboBox* combo, gpointer userData);
     static void onGridToggle(GtkToggleButton* toggle, gpointer userData);
     static void onArmToggled(GtkToggleButton* toggle, gpointer userData);
 
     // Sequencer control helpers
     void startSequencer();
     void stopSequencer();
+    void rebuildSequencerGrid(int newColumnCount);
+    guint calculateSequencerIntervalMs() const;
+    void restartSequencerTimerIfRunning();
 
     // MIDI handling helpers
     void handleMidiNoteOn(const MidiNote& note);

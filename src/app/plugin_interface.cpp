@@ -3,12 +3,15 @@
 #include "../modules/filter.h"
 #include "../modules/envelope.h"
 
+// Initialize plugin interface state and parameter metadata.
 PluginInterface::PluginInterface() : pipeline(nullptr), wavetableManager(nullptr), currentWavetableIndex(0) {
     setupParameters();
 }
 
+// Defaulted destructor; owned resources are managed elsewhere.
 PluginInterface::~PluginInterface() = default;
 
+// Attach audio pipeline and cache its wavetable manager reference.
 void PluginInterface::setPipeline(AudioPipeline* pipe) {
     pipeline = pipe;
     if (pipe) {
@@ -16,6 +19,7 @@ void PluginInterface::setPipeline(AudioPipeline* pipe) {
     }
 }
 
+// Define plugin parameters and baseline UI layout metadata.
 void PluginInterface::setupParameters() {
     // Oscillator parameters
     oscillatorParams.push_back(Parameter("Oscillator Frequency", 20.0f, 5000.0f, 440.0f, true, ControlType::SLIDER, "Hz"));
@@ -55,26 +59,32 @@ void PluginInterface::setupParameters() {
     controlLayouts.push_back(ControlLayout(10, 400, 150, 20, ParameterCategory::WAVETABLE));      // Wavetable Morph
 }
 
+// Get oscillator parameter metadata list.
 const std::vector<Parameter>& PluginInterface::getOscillatorParams() const {
     return oscillatorParams;
 }
 
+// Get filter parameter metadata list.
 const std::vector<Parameter>& PluginInterface::getFilterParams() const {
     return filterParams;
 }
 
+// Get envelope parameter metadata list.
 const std::vector<Parameter>& PluginInterface::getEnvelopeParams() const {
     return envelopeParams;
 }
 
+// Get wavetable parameter metadata list.
 const std::vector<Parameter>& PluginInterface::getWavetableParams() const {
     return wavetableParams;
 }
 
+// Get control layout metadata for grouped UI rendering.
 const std::vector<ControlLayout>& PluginInterface::getControlLayouts() const {
     return controlLayouts;
 }
 
+// Seed wavetable manager with default and demo waveforms.
 void PluginInterface::loadWavetables() {
     // Load wavetables into the manager
     if (wavetableManager) {
@@ -91,22 +101,26 @@ void PluginInterface::loadWavetables() {
     }
 }
 
+// Placeholder for persisting edited wavetables.
 void PluginInterface::saveWavetables() {
     // Save any modified wavetables
 }
 
+// Add a custom wavetable to the backing manager.
 void PluginInterface::addNewWavetable(const std::string& name, const std::vector<float>& data) {
     if (wavetableManager) {
         wavetableManager->addWavetable(name, data);
     }
 }
 
+// Remove a custom wavetable from the backing manager.
 void PluginInterface::removeWavetable(const std::string& name) {
     if (wavetableManager) {
         wavetableManager->removeWavetable(name);
     }
 }
 
+// Generate one of the built-in wavetable shapes by numeric type.
 void PluginInterface::generateWavetable(const std::string& name, int wavetableType, size_t length) {
     if (wavetableManager) {
         switch(wavetableType) {
@@ -126,6 +140,7 @@ void PluginInterface::generateWavetable(const std::string& name, int wavetableTy
     }
 }
 
+// Placeholder for parameter-to-module routing updates.
 void PluginInterface::mapParametersToModules() {
     // This would be called when parameters are changed to update the audio modules
     // Implementation will depend on how audio pipelines work
@@ -134,6 +149,7 @@ void PluginInterface::mapParametersToModules() {
     // In practice, we'd iterate through parameters and set module values accordingly
 }
 
+// Convert category enum into display-friendly label text.
 std::string PluginInterface::getCategoryName(ParameterCategory category) const {
     switch(category) {
         case ParameterCategory::OSCILLATOR: return "Oscillator";

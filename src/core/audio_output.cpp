@@ -6,22 +6,25 @@
 #include <thread>
 #include <algorithm>
 
-// Helper to write little-endian integers
+// Helper to write little-endian integers.
 static void writeLE(std::ofstream &out, uint32_t value, int bytes) {
     for (int i = 0; i < bytes; ++i) {
         out.put(static_cast<char>((value >> (8 * i)) & 0xFF));
     }
 }
 
+// Construct audio output backend around the active pipeline.
 AudioOutput::AudioOutput(AudioPipeline* pipeline, const std::string& filename)
     : pipeline(pipeline), filename(filename), running(false), dataChunkPos(0) {
     // nothing else to do; portaudio stream created on start()
 }
 
+// Ensure output stream/thread is stopped on destruction.
 AudioOutput::~AudioOutput() {
     stop();
 }
 
+// Start real-time PortAudio stream or file-rendering fallback.
 bool AudioOutput::start() {
     if (!pipeline) return false;
 
@@ -81,6 +84,7 @@ bool AudioOutput::start() {
 #endif
 }
 
+// Stop active output backend and release associated resources.
 void AudioOutput::stop() {
 #ifdef USE_PORTAUDIO
     if (running) {
@@ -103,6 +107,7 @@ void AudioOutput::stop() {
 #endif
 }
 
+// Write placeholder WAV header before streaming PCM samples.
 void AudioOutput::writeWavHeader() {
     // simple 16-bit PCM header placeholder
     // we'll fill chunk sizes later
@@ -122,6 +127,7 @@ void AudioOutput::writeWavHeader() {
     writeLE(outFile, 0, 4); // placeholder for data size
 }
 
+// Patch WAV header chunk sizes after rendering is complete.
 void AudioOutput::finalizeWavHeader() {
     if (!outFile) return;
     uint32_t fileSize = static_cast<uint32_t>(outFile.tellp());
@@ -135,6 +141,7 @@ void AudioOutput::finalizeWavHeader() {
 }
 
 #ifdef USE_PORTAUDIO
+// PortAudio callback bridge into pipeline processing.
 int AudioOutput::audioCallback(const void* inputBuffer, void* outputBuffer,
                               unsigned long framesPerBuffer,
                               const PaStreamCallbackTimeInfo* timeInfo,
@@ -158,6 +165,7 @@ int AudioOutput::audioCallback(const void* inputBuffer, void* outputBuffer,
     return self->running ? paContinue : paComplete;
 }
 #else
+// File-render loop used when PortAudio is not enabled.
 void AudioOutput::runLoop() {
     const size_t bufferSize = pipeline->getBufferSize();
     std::vector<float> mono(bufferSize);
